@@ -1,5 +1,5 @@
 /**
- * OpenDocs API Integration Tests
+ * Onboard API Integration Tests
  * 
  * Run with: npx tsx scripts/test-api.ts
  */
@@ -197,7 +197,7 @@ async function testLLMSTxt() {
   const res = await fetch(`${BASE_URL}/llms.txt`)
   if (!res.ok) throw new Error(`Status: ${res.status}`)
   const text = await res.text()
-  if (!text.includes('OpenDocs')) throw new Error('Missing OpenDocs identifier')
+  if (!text.includes('Onboard')) throw new Error('Missing site identifier')
   if (!text.includes('/api/v1')) throw new Error('Missing API reference')
 }
 
@@ -205,7 +205,7 @@ async function testLLMSFullTxt() {
   const res = await fetch(`${BASE_URL}/llms-full.txt`)
   if (!res.ok) throw new Error(`Status: ${res.status}`)
   const text = await res.text()
-  if (!text.includes('OpenDocs')) throw new Error('Missing OpenDocs identifier')
+  if (!text.includes('Onboard')) throw new Error('Missing site identifier')
   if (text.length < 500) throw new Error('Content too short')
 }
 
@@ -251,7 +251,7 @@ async function testAPIDocsEndpoint() {
 }
 
 async function main() {
-  console.log('\n🧪 OpenDocs API Integration Tests\n')
+  console.log('\n🧪 Onboard API Integration Tests\n')
   console.log(`Testing: ${BASE_URL}\n`)
 
   // Health & Discovery

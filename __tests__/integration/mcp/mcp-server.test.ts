@@ -1,6 +1,6 @@
 // @vitest-environment node
 /**
- * 🌮 REAL MCP INTEGRATION TESTS — opendocs-mcp
+ * 🌮 REAL MCP INTEGRATION TESTS — onboard-mcp
  *
  * Uses @modelcontextprotocol/sdk InMemoryTransport to wire a real MCP Client
  * directly to the real McpServer factory (`createMcpServer`) — no HTTP, no
@@ -96,7 +96,7 @@ const {
     { id: 'method', text: 'Method', level: 2 },
   ])
   const readFileMock = vi.fn().mockResolvedValue(
-    '# OpenDocs 🌮\n\nThe tastiest documentation platform.\n\n## Features\n\n- Real MCP\n- Taco emoji 🌮🔥',
+    '# Onboard 🌮\n\nThe tastiest documentation platform.\n\n## Features\n\n- Real MCP\n- Taco emoji 🌮🔥',
   )
   const statMock = vi.fn().mockResolvedValue({ mtime: new Date('2026-01-01T00:00:00Z') })
 
@@ -123,7 +123,7 @@ vi.mock('@/lib/seo-generator', () => ({
   generateGEOMetadata: vi.fn().mockReturnValue({
     summary: 'A comprehensive guide to tacos.',
     keyFacts: ['Tacos are delicious'],
-    citationLabel: 'The Ultimate Taco Guide — OpenDocs',
+    citationLabel: 'The Ultimate Taco Guide — Onboard',
     topicTags: ['tacos', 'food'],
   }),
   generateFullOptimization: vi.fn().mockResolvedValue({
@@ -147,7 +147,7 @@ vi.mock('@/lib/seo-generator', () => ({
     geo: {
       summary: 'A comprehensive guide to tacos.',
       keyFacts: ['Tacos are delicious'],
-      citationLabel: 'The Ultimate Taco Guide — OpenDocs',
+      citationLabel: 'The Ultimate Taco Guide — Onboard',
       topicTags: ['tacos'],
     },
   }),
@@ -193,7 +193,7 @@ beforeAll(async () => {
   const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair()
   await server.connect(serverTransport)
 
-  client = new MClient({ name: 'opendocs-test-client', version: '1.0.0' })
+  client = new MClient({ name: 'onboard-test-client', version: '1.0.0' })
   await client.connect(clientTransport) // triggers full MCP initialize handshake ✅
 })
 
@@ -676,7 +676,7 @@ describe('📬 submit_content', () => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 describe('🌐 ingest_url', () => {
-  it('fetches URL with OpenDocs User-Agent and creates a draft', async () => {
+  it('fetches URL with Onboard User-Agent and creates a draft', async () => {
     // ensureCategoryExists: SELECT categories (not found) | INSERT categories
     // getBaseUrl() → auto | sql`NULL` fragment auto | INSERT doc | INSERT idx(fallback)
     db([], [], [{ id: 'ing-001', slug: 'taco-blog' }])
@@ -691,7 +691,7 @@ describe('🌐 ingest_url', () => {
     expect(fetch).toHaveBeenCalledWith(
       'https://tacostand.example.com/blog',
       expect.objectContaining({
-        headers: expect.objectContaining({ 'User-Agent': expect.stringContaining('OpenDocs') }),
+        headers: expect.objectContaining({ 'User-Agent': expect.stringContaining('Onboard') }),
       }),
     )
   })
@@ -1077,7 +1077,7 @@ describe('📖 get_project_doc', () => {
     expect(result.file).toBe('README.md')
     expect(result.title).toBeTruthy()
     expect(typeof result.content).toBe('string')
-    expect(String(result.content)).toContain('OpenDocs')
+    expect(String(result.content)).toContain('Onboard')
     expect(Number(result.wordCount)).toBeGreaterThan(0)
     expect(result.readingTime).toBeGreaterThan(0)
     expect(result.lastModified).toBe('2026-01-01T00:00:00.000Z')
@@ -1206,7 +1206,7 @@ describe('🤖 docs://llms', () => {
     const result = await client.readResource({ uri: 'docs://llms' })
     expect(result.contents[0].mimeType).toBe('text/plain')
     const text = (result.contents[0] as any).text as string
-    expect(text).toContain('# OpenDocs')
+    expect(text).toContain('# Onboard')
     expect(text).toContain('MCP Endpoint:')
     expect(text).toContain('## Documents')
     expect(text).toContain('Taco Guide')
@@ -1227,7 +1227,7 @@ describe('📁 project-docs://{slug}', () => {
     // getBaseUrl() → auto | fs.readFile mocked
     const result = await client.readResource({ uri: 'project-docs://readme' })
     expect(result.contents[0].mimeType).toBe('text/markdown')
-    expect(String((result.contents[0] as any).text)).toContain('OpenDocs')
+    expect(String((result.contents[0] as any).text)).toContain('Onboard')
   })
 
   it('project-docs://api returns API.md content', async () => {

@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { generateSEOMetadata, generateAEOMetadata, generateGEOMetadata } from '@/lib/seo-generator'
 import { generateEmojiSummary } from '@/lib/emoji'
 import { generateSimpleSlug } from '@/lib/auto-name'
+import { SITE_NAME } from '@/lib/site-config'
 
 async function getBaseUrl(): Promise<string> {
   try {

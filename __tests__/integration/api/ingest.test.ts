@@ -30,7 +30,7 @@ vi.mock('@/lib/seo-generator', () => ({
   generateGEOMetadata: () => ({
     summary: 'Test summary for AI.',
     keyFacts: ['Fact one'],
-    citationLabel: 'Test — OpenDocs',
+    citationLabel: 'Test — Onboard',
     topicTags: ['test'],
   }),
 }))

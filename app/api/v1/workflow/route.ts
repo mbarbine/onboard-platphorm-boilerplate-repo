@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sql, DEFAULT_TENANT_ID } from '@/lib/db'
 import { generateSEOMetadata } from '@/lib/seo-generator'
 import { generateEmojiSummary, parseEmojiShortcodes } from '@/lib/emoji'
+import { SITE_NAME } from '@/lib/site-config'
 
 /**
  * Workflow API - Async job processing and platform consumption

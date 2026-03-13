@@ -211,10 +211,10 @@ describe('generateGEOMetadata', () => {
     expect(geo.keyFacts.length).toBeLessThanOrEqual(5)
   })
 
-  it('generates citation label with title and OpenDocs', () => {
+  it('generates citation label with title and Onboard', () => {
     const geo = generateGEOMetadata(doc)
     expect(geo.citationLabel).toContain('API Authentication Guide')
-    expect(geo.citationLabel).toContain('OpenDocs')
+    expect(geo.citationLabel).toContain('Onboard')
   })
 
   it('extracts topic tags from keywords', () => {
@@ -232,7 +232,7 @@ describe('generateGEOMetadata', () => {
     }
     const geo = generateGEOMetadata(minDoc)
     expect(geo.summary.length).toBeGreaterThan(0)
-    expect(geo.citationLabel).toBe('Quick Note — OpenDocs')
+    expect(geo.citationLabel).toBe('Quick Note — Onboard')
   })
 })
 

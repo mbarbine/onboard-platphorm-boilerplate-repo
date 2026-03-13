@@ -28,7 +28,7 @@ describe('logger', () => {
     const logged = JSON.parse(consoleSpy.info.mock.calls[0][0] as string)
     expect(logged.level).toBe('info')
     expect(logged.message).toBe('Test message')
-    expect(logged.service).toBe('opendocs')
+    expect(logged.service).toBe('onboard')
   })
 
   it('logs warn messages', () => {

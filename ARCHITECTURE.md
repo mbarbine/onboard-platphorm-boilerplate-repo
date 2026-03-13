@@ -136,7 +136,7 @@ Query → tsvector Processing → PostgreSQL Full-Text →
 ## Security Model
 
 ### No Authentication Mode
-OpenDocs operates without user authentication by design:
+The platform operates without user authentication by design:
 - Content is public by default
 - API keys protect write operations
 - Rate limiting prevents abuse

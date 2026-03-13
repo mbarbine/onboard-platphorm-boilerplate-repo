@@ -196,12 +196,12 @@ describe('generateStructuredData', () => {
     expect(data.author).toEqual({ '@type': 'Person', name: 'John Doe' })
   })
 
-  it('uses OpenDocs org as author when not provided', () => {
+  it('uses Onboard org as author when not provided', () => {
     const data = generateStructuredData(
       { title: 'Test', slug: 'test', content: 'Content' },
       'https://example.com'
     )
-    expect(data.author).toEqual({ '@type': 'Organization', name: 'OpenDocs' })
+    expect(data.author).toEqual({ '@type': 'Organization', name: 'Onboard' })
   })
 
   it('includes category when provided', () => {

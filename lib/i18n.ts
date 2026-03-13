@@ -1,4 +1,6 @@
-import { SITE_NAME } from './site-config'\n\nexport type Locale = 'en' | 'es' | 'fr' | 'de' | 'ja' | 'zh' | 'pt' | 'ar' | 'ru' | 'ko'
+import { SITE_NAME } from './site-config'
+
+export type Locale = 'en' | 'es' | 'fr' | 'de' | 'ja' | 'zh' | 'pt' | 'ar' | 'ru' | 'ko'
 
 export const locales: Locale[] = ['en', 'es', 'fr', 'de', 'ja', 'zh', 'pt', 'ar', 'ru', 'ko']
 

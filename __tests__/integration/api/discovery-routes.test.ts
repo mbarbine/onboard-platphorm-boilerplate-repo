@@ -341,7 +341,7 @@ describe('GET /llms-index.json', () => {
     const response = await GET()
     const data = await response.json()
 
-    expect(data.name).toBe('OpenDocs')
+    expect(data.name).toBe('Onboard')
     expect(data.stats).toBeDefined()
     expect(data.endpoints).toBeDefined()
     expect(data.mcp).toBeDefined()
@@ -427,7 +427,7 @@ describe('GET /.well-known/agent.json', () => {
     const response = await GET()
     const data = await response.json()
 
-    expect(data.name).toBe('OpenDocs')
+    expect(data.name).toBe('Onboard')
     expect(data.schema_version).toBe('1.0.0')
     expect(data.provider).toBeDefined()
     expect(data.provider.organization).toBe('Platphorm News')

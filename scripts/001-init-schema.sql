@@ -1,4 +1,4 @@
--- OpenDocs Schema - MCP-Enabled Documentation Platform
+-- Onboard Schema - MCP-Enabled Documentation Platform
 -- Version: 1.0.0
 
 -- Enable UUID extension
