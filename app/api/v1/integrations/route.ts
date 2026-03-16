@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sql } from '@/lib/db'
+import { apiResponse, apiError } from '@/lib/api-helpers'
 
 const DEFAULT_TENANT = '00000000-0000-0000-0000-000000000001'
 
@@ -12,16 +13,10 @@ export async function GET() {
       ORDER BY name ASC
     `
     
-    return NextResponse.json({
-      success: true,
-      data: integrations,
-    })
+    return apiResponse(integrations)
   } catch (error) {
     console.error('Error fetching integrations:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch integrations' },
-      { status: 500 }
-    )
+    return apiError('FETCH_ERROR', 'Failed to fetch integrations', 500)
   }
 }
 
@@ -31,10 +26,7 @@ export async function POST(request: NextRequest) {
     const { name, base_url, api_path = '/api', mcp_path = '/api/mcp', enabled = true, settings = {} } = body
     
     if (!name || !base_url) {
-      return NextResponse.json(
-        { success: false, error: 'Name and base_url are required' },
-        { status: 400 }
-      )
+      return apiError('VALIDATION_ERROR', 'Name and base_url are required', 400)
     }
     
     const result = await sql`
@@ -51,15 +43,9 @@ export async function POST(request: NextRequest) {
       RETURNING *
     `
     
-    return NextResponse.json({
-      success: true,
-      data: result[0],
-    })
+    return apiResponse(result[0], undefined, 201)
   } catch (error) {
     console.error('Error creating integration:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to create integration' },
-      { status: 500 }
-    )
+    return apiError('CREATE_ERROR', 'Failed to create integration', 500)
   }
 }

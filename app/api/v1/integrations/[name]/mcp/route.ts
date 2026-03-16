@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sql } from '@/lib/db'
+import { apiResponse, apiError } from '@/lib/api-helpers'
 
 const DEFAULT_TENANT = '00000000-0000-0000-0000-000000000001'
 
@@ -18,10 +19,7 @@ export async function POST(
     `
     
     if (integrations.length === 0) {
-      return NextResponse.json(
-        { success: false, error: `Integration '${name}' not found or disabled` },
-        { status: 404 }
-      )
+      return apiError('NOT_FOUND', `Integration '${name}' not found or disabled`, 404)
     }
     
     const integration = integrations[0]
@@ -70,28 +68,19 @@ export async function GET(
     `
     
     if (integrations.length === 0) {
-      return NextResponse.json(
-        { success: false, error: `Integration '${name}' not found` },
-        { status: 404 }
-      )
+      return apiError('NOT_FOUND', `Integration '${name}' not found`, 404)
     }
     
     const integration = integrations[0]
     
-    return NextResponse.json({
-      success: true,
-      data: {
-        ...integration,
-        mcp_endpoint: `${integration.base_url}${integration.mcp_path}`,
-        api_endpoint: `${integration.base_url}${integration.api_path}`,
-        docs_endpoint: `${integration.base_url}${integration.api_path}/docs`,
-      },
+    return apiResponse({
+      ...integration,
+      mcp_endpoint: `${integration.base_url}${integration.mcp_path}`,
+      api_endpoint: `${integration.base_url}${integration.api_path}`,
+      docs_endpoint: `${integration.base_url}${integration.api_path}/docs`,
     })
   } catch (error) {
     console.error(`Error fetching integration ${name}:`, error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch integration' },
-      { status: 500 }
-    )
+    return apiError('FETCH_ERROR', 'Failed to fetch integration', 500)
   }
 }
