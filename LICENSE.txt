@@ -1,0 +1,83 @@
+PlatPhorm News Network License 1.0
+Licensor: PlatPhorm News, Barbine Worldwide, PH3AR, and their controlled or designated publishing, research, software, and media entities (collectively, “PlatPhorm News”)
+Software: All repositories, code, schemas, prompts, datasets, templates, specifications, automation flows, static assets, API definitions, MCP integrations, discovery files, network manifests, llms.txt assets, and related materials that are published, distributed, or otherwise designated by PlatPhorm News under this license, including project repositories associated with the PlatPhorm News Network and associated organizations and brands (collectively, the “Software”)
+
+This license is based in part on the structure of FoxIO License 1.1, but has been materially adapted for PlatPhorm News and its networked software, content, publishing, automation, and platform ecosystem.
+
+1. Acceptance
+In order to get any license under these terms, you must agree to them as both strict obligations and conditions to all your licenses.
+
+2. Copyright License
+The licensor grants you a copyright license to use, reproduce, modify, and distribute the Software, in source or binary form, only for non-commercial purposes and subject to the restrictions in this license.
+
+“Non-commercial purposes” include personal use by an individual, academic research and development, journalism, testing, evaluation, interoperability work, security review, accessibility work, and internal use by your own organization where you do not directly or indirectly charge fees, receive value, or provide paid access, services, features, or outcomes attributable in whole or in part to the Software.
+
+“Non-commercial purposes” do not include any use where you or another party receive money, subscription revenue, advertising revenue, sponsorship revenue, affiliate revenue, lead generation value, service revenue, resale value, investor value tied to productization, or any other thing of value directly or indirectly from use of, access to, integration with, or outputs of the Software. “Non-commercial purposes” also do not include hosted or managed services, SaaS, platform features, client work, consulting deliverables, OEM use, white-labeling, support services, training services sold to others, or use of the Software to operate or improve a revenue-generating product, service, network, or publication.
+
+You may fork the Software, study it, modify it, and share those changes for non-commercial purposes only, provided that you preserve this license, all copyright notices, attribution notices, trademark notices, authorship notices, repository notices, and any other intellectual property notices included by the licensor.
+
+You must ensure that anyone who gets a copy of any part of the Software from you also gets a copy of these license terms.
+
+3. Commercial Rights Reserved
+All commercial rights are reserved exclusively to PlatPhorm News unless PlatPhorm News grants you separate written permission.
+
+Without separate written permission from PlatPhorm News, you may not:
+
+(a) sell, license, sublicense, monetize, rent, lease, host, or otherwise commercially exploit the Software or any substantial portion of it;
+(b) offer the Software as part of a paid or revenue-generating service, product, managed offering, consulting engagement, or customer deliverable;
+(c) use the Software, its outputs, or modified versions of it to provide value to paying customers, members, subscribers, advertisers, sponsors, partners, or clients;
+(d) remove, alter, or obscure copyright, authorship, or proprietary notices;
+(e) claim ownership of the original Software or any PlatPhorm News marks, brands, titles, domain identities, or repository identities; or
+(f) distribute modified versions under terms that purport to limit, extinguish, or reassign PlatPhorm News copyright ownership in the original Software.
+
+4. Copyright Ownership and Contributions
+Except for any separate written agreement with PlatPhorm News, all right, title, and interest in the original Software, including all copyrights and other intellectual property rights in the original Software and associated names, marks, documentation, schemas, prompts, content frameworks, and repository identity, remain with PlatPhorm News.
+
+You own your original modifications to the extent allowed by law, but any distribution of those modifications must preserve this license as to the original Software and must not suggest that copyright in the original Software has transferred away from PlatPhorm News.
+
+If you intentionally submit a contribution to PlatPhorm News for inclusion in the Software, you grant PlatPhorm News a perpetual, worldwide, non-exclusive, irrevocable, royalty-free license to use, reproduce, modify, distribute, relicense, and commercialize that contribution as part of the Software and related works, unless a separate written contribution agreement states otherwise.
+
+5. Trademark, Brand, and Attribution
+This license does not grant you any right to use the names “PlatPhorm News,” “Barbine Worldwide,” “PH3AR,” or any other licensor brand, product name, publication name, repository name, logo, network identity, or domain identity, except for reasonable and truthful attribution describing the origin of the Software.
+
+Neither the name of PlatPhorm News nor the names of its contributors, maintainers, associated organizations, brands, sites, or repositories may be used to endorse or promote products or services derived from the Software without specific prior written permission.
+
+6. Patent License
+To the extent the licensor has patent claims that would necessarily be infringed by use of the Software as provided by the licensor and solely as allowed under this license for non-commercial purposes, the licensor grants you a patent license for those claims.
+
+This license does not grant you any right to practice patent rights for inventions not fully embodied in the Software in the form provided by the licensor, and it does not grant any patent license for commercial use.
+
+7. Patent Defense
+If you make any written claim that the Software infringes or contributes to infringement of any patent, your patent license for the Software granted under these terms ends immediately. If your company makes such a claim, your patent license ends immediately for work on behalf of your company.
+
+8. No Other Rights
+These terms do not allow you to sublicense or transfer any of your licenses to anyone else, except as part of a permitted non-commercial redistribution that includes these terms. These terms do not prevent the licensor from granting licenses to anyone else. These terms do not imply any other licenses.
+
+9. Open Distribution and Combination with Other Code
+You may combine the Software with other code for non-commercial purposes. When redistributing combinations, you must preserve the licensing notices for each component separately.
+
+If you combine the Software with software under licenses that impose their own redistribution conditions, including copyleft licenses, you are responsible for complying with those licenses. Nothing in this license waives, overrides, or modifies obligations imposed by other licenses.
+
+10. Violations
+The first time you are notified in writing that you have violated any of these terms, or done anything with the Software not covered by your licenses, your licenses can nonetheless continue if you come into full compliance with these terms, take practical steps to correct past violations, and provide a written statement that all such past violations have been corrected within 30 days after receiving notice. Otherwise, all your licenses end immediately.
+
+11. Duration
+Your licenses for a particular version of the Software will continue until the end of life of that version of the Software, or earlier as described in the Violations section above.
+
+12. No Warranty
+AS FAR AS THE LAW ALLOWS, THE SOFTWARE COMES “AS IS”, WITHOUT ANY WARRANTY OR CONDITION, AND THE LICENSOR WILL NOT BE LIABLE TO YOU FOR ANY DAMAGES ARISING OUT OF THESE TERMS OR THE USE OR NATURE OF THE SOFTWARE, UNDER ANY KIND OF LEGAL CLAIM.
+
+13. Definitions
+The “Licensor” is the individual or entity offering these terms, including PlatPhorm News and any controlled or designated associated organization or brand that publishes the Software under this license.
+
+The “Software” means any repository, component, file, asset, package, site codebase, automation flow, dataset, content template, schema, manifest, specification, MCP implementation, API definition, or related material the licensor makes available under these terms.
+
+“You” refers to the individual or entity agreeing to these terms.
+
+“Your company” is any legal entity, sole proprietorship, nonprofit, public body, or other organization that you work for, plus all organizations that have control over, are under the control of, or are under common control with that organization. “Control” means ownership of substantially all the assets of an entity, or the power to direct its management and policies by vote, contract, or otherwise. Control can be direct or indirect.
+
+“Your licenses” are all the licenses granted to you for the Software under these terms.
+
+“Use” means anything you do with the Software requiring one of your licenses.
+
+“End of Life” for a version of the Software is a date publicly announced by the licensor on which the licensor intends to cease maintenance of that version of the Software.
