@@ -446,6 +446,7 @@ export default function SettingsPage() {
                                     variant="outline" 
                                     size="icon"
                                     onClick={() => copyToClipboard(integration.base_url)}
+                                    aria-label="Copy URL"
                                   >
                                     <Copy className="h-4 w-4" />
                                   </Button>
