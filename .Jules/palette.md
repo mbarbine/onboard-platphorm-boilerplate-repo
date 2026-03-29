@@ -9,6 +9,10 @@
 **Learning:** Inputs (like search bars or select dropdowns) that use placeholders for visual context but lack explicit visible `<label>` elements are a common accessibility pattern failure. Screen readers often do not reliably read placeholders as labels, making the purpose of the input unclear to non-visual users.
 **Action:** Always provide an explicit `aria-label` or `aria-labelledby` attribute on any form control (`<input>`, `<SelectTrigger>`, `<button>`, etc.) that does not have a linked, visible `<label>` element.
 
-## 2025-03-24 - Missing Focus Indicators on Manually Injected HTML Buttons
-**Learning:** Interactive elements like buttons that are generated via string replacement and injected as raw HTML (e.g., in `markdown-renderer.tsx` for copy buttons) often miss keyboard focus indicators (`focus-visible:ring-2`, etc.) because they aren't standard design system components. This makes keyboard navigation difficult or impossible for users relying on visual focus.
-**Action:** Always ensure that interactive elements generated via string replacement include standard keyboard focus utility classes (`focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`) to maintain accessibility parity with standard React components.
+## 2025-03-22 - Keyboard accessibility for hover-revealed elements
+**Learning:** Elements that are visually hidden until their container is hovered (`opacity-0 group-hover:opacity-100`) are inaccessible to keyboard users because tabbing into them doesn't trigger the hover state, leaving them invisible while focused.
+**Action:** Whenever using `group-hover:opacity-100` to reveal interactive elements, always pair it with `group-focus-within:opacity-100` (or `focus-within:opacity-100` on the parent) to ensure the elements become visible when receiving keyboard focus.
+
+## 2025-03-23 - Focus Rings on Manually Injected HTML Buttons
+**Learning:** Interactive elements that are manually injected into HTML strings (like the copy buttons inside dynamically rendered markdown code blocks) lack the standard Tailwind focus ring utilities provided by React component libraries (like Radix or shadcn/ui). This causes a significant accessibility regression because keyboard users cannot see which element has focus.
+**Action:** Always explicitly include Tailwind focus ring utilities (`focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-ring`) on any interactive element (e.g., `<button>`, `<a>`) that is constructed via string replacement or manual HTML injection.
