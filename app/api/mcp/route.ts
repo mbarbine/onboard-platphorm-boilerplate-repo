@@ -7,6 +7,7 @@ import type { Document } from '@/lib/db'
 import { generateSEOMetadata, updateDocumentSEO, updateDocumentSEOFromMeta, generateAEOMetadata, generateGEOMetadata, generateFullOptimization } from '@/lib/seo-generator'
 import { parseMarkdown, extractTableOfContents } from '@/lib/markdown'
 import { generateSimpleSlug } from '@/lib/auto-name'
+import { logger } from '@/lib/logger'
 import crypto from 'crypto'
 import { promises as fs } from 'fs'
 import path from 'path'
@@ -105,7 +106,7 @@ async function ensureCategoryExists(categorySlug: string | null | undefined): Pr
     }
   } catch (catError) {
     // Category creation is best-effort; log and continue with document insertion
-    console.warn('Category auto-creation failed:', catError instanceof Error ? catError.message : catError)
+    logger.warn('Category auto-creation failed', { error: catError instanceof Error ? catError : String(catError) })
   }
   return categorySlug
 }
