@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { generateSEOMetadata, generateAEOMetadata, generateGEOMetadata } from '@/lib/seo-generator'
 import { generateEmojiSummary } from '@/lib/emoji'
 import { generateSimpleSlug } from '@/lib/auto-name'
+import { logger } from '@/lib/logger'
 import { SITE_NAME } from '@/lib/site-config'
 
 async function getBaseUrl(): Promise<string> {
@@ -374,7 +375,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (catError) {
       // Category creation is best-effort; log and continue with document insertion
-      console.warn('Category auto-creation failed:', catError instanceof Error ? catError.message : catError)
+      logger.warn('Category auto-creation failed', { error: catError instanceof Error ? catError : String(catError) })
     }
 
     // Generate SEO metadata
@@ -489,7 +490,7 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
 
   } catch (error) {
-    console.error('Ingest error:', error)
+    logger.error('Ingest error', { error: error instanceof Error ? error : String(error) })
     return NextResponse.json(
       { 
         success: false, 
