@@ -134,7 +134,7 @@ export function createMcpServer(): McpServer {
       const baseUrl = await getBaseUrl()
       const limit = Math.min(rawLimit ?? 20, 100)
       const offset = rawOffset ?? 0
-      const orderBy = sort === 'alphabetical' ? 'title ASC' : 'published_at DESC NULLS LAST'
+
 
       let docs: Document[]
       if (search) {
@@ -158,7 +158,7 @@ export function createMcpServer(): McpServer {
             AND deleted_at IS NULL AND status = 'published'
             ${category ? sql`AND category = ${category}` : sql``}
             ${tag ? sql`AND tags @> ${JSON.stringify([tag])}::jsonb` : sql``}
-          ORDER BY ${sql.unsafe(orderBy)}
+          ${sort === 'alphabetical' ? sql`ORDER BY title ASC` : sort === 'popular' ? sql`ORDER BY view_count DESC NULLS LAST` : sql`ORDER BY published_at DESC NULLS LAST`}
           LIMIT ${limit} OFFSET ${offset}
         ` as Document[]
       }
