@@ -119,21 +119,21 @@ function parseMarkdown(content: string): string {
     const id = text.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
     return `<h3 id="${id}" class="group text-lg font-semibold mt-8 mb-4 scroll-mt-20">
       <a href="#${id}" class="no-underline hover:underline">${text}</a>
-      <span class="opacity-0 group-hover:opacity-100 ml-2 text-muted-foreground">#</span>
+      <span class="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 ml-2 text-muted-foreground">#</span>
     </h3>`
   })
   html = html.replace(/^## (.+)$/gm, (_, text) => {
     const id = text.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
     return `<h2 id="${id}" class="group text-xl font-semibold mt-10 mb-4 border-b pb-2 scroll-mt-20">
       <a href="#${id}" class="no-underline hover:underline">${text}</a>
-      <span class="opacity-0 group-hover:opacity-100 ml-2 text-muted-foreground">#</span>
+      <span class="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 ml-2 text-muted-foreground">#</span>
     </h2>`
   })
   html = html.replace(/^# (.+)$/gm, (_, text) => {
     const id = text.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
     return `<h1 id="${id}" class="group text-3xl font-bold mt-10 mb-6 scroll-mt-20">
       <a href="#${id}" class="no-underline hover:underline">${text}</a>
-      <span class="opacity-0 group-hover:opacity-100 ml-2 text-muted-foreground">#</span>
+      <span class="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 ml-2 text-muted-foreground">#</span>
     </h1>`
   })
 
