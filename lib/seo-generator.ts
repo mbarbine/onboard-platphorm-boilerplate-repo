@@ -379,12 +379,12 @@ export async function updateDocumentSEO(
   baseUrl: string
 ): Promise<void> {
   // Fetch the document
-  const docs = await sql`
+  const docs = (await sql`
     SELECT slug, title, description, content, category, tags,
            source_url, author_name, published_at
     FROM documents
     WHERE slug = ${slug} AND tenant_id = ${DEFAULT_TENANT_ID}
-  ` as unknown as DocumentMeta[]
+  `) as unknown as DocumentMeta[]
 
   if (docs.length === 0) return
 
@@ -393,14 +393,14 @@ export async function updateDocumentSEO(
 
 // Batch update SEO for all documents
 export async function updateAllDocumentsSEO(baseUrl: string): Promise<number> {
-  const docs = await sql`
+  const docs = (await sql`
     SELECT slug, title, description, content, category, tags,
            source_url, author_name, published_at
     FROM documents
     WHERE tenant_id = ${DEFAULT_TENANT_ID}
       AND status = 'published'
       AND deleted_at IS NULL
-  ` as unknown as DocumentMeta[]
+  `) as unknown as DocumentMeta[]
   
   // Parallel updates with concurrency limit
   const CHUNK_SIZE = 10

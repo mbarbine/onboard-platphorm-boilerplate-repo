@@ -138,14 +138,14 @@ export async function getOrCreateSession(): Promise<Session | null> {
     const geo = extractGeoInfo(headersList)
     
     // Try to find existing session
-    const existingSessions = await sql`
+    const existingSessions = (await sql`
       SELECT * FROM sessions 
       WHERE fingerprint_hash = ${sessionHash}
         AND tenant_id = ${DEFAULT_TENANT_ID}
         AND expires_at > NOW()
       ORDER BY last_activity_at DESC
       LIMIT 1
-    ` as unknown as Session[]
+    `) as unknown as Session[]
     
     if (existingSessions.length > 0) {
       // Update last activity
@@ -158,7 +158,7 @@ export async function getOrCreateSession(): Promise<Session | null> {
     }
     
     // Create new session
-    const newSessions = await sql`
+    const newSessions = (await sql`
       INSERT INTO sessions (
         tenant_id, fingerprint_ja4, fingerprint_hash, 
         user_agent, ip_address, 
@@ -172,7 +172,7 @@ export async function getOrCreateSession(): Promise<Session | null> {
         '{}', '{}'
       )
       RETURNING *
-    ` as unknown as Session[]
+    `) as unknown as Session[]
     
     return newSessions[0] || null
   } catch (error) {

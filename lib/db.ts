@@ -19,7 +19,6 @@ function getClient(): InternalClient {
 // so the resolved return type is Record<string, any>[].  The conditional union
 // that TypeScript infers through the Proxy wrapper is too wide for strict mode,
 // hence the explicit call-signature below.
-//
 type Row = Record<string, unknown>
 export interface SqlClient {
   (strings: TemplateStringsArray, ...values: unknown[]): Promise<Row[]>
