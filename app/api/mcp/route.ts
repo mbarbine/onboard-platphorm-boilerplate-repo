@@ -1,3 +1,4 @@
+import { DocumentMeta } from "@/lib/seo-generator"
 import { NextResponse } from 'next/server'
 import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
@@ -624,7 +625,8 @@ export function createMcpServer(): McpServer {
                  source_url, author_name, published_at
           FROM documents
           WHERE tenant_id = ${DEFAULT_TENANT_ID} AND deleted_at IS NULL
-        ` as any[]
+        ` as unknown as any[]
+
 
         // Parallel updates with concurrency limit
         const CHUNK_SIZE = 10

@@ -145,7 +145,7 @@ export async function getOrCreateSession(): Promise<Session | null> {
         AND expires_at > NOW()
       ORDER BY last_activity_at DESC
       LIMIT 1
-    ` as Session[]
+    ` as unknown as Session[]
     
     if (existingSessions.length > 0) {
       // Update last activity
@@ -172,7 +172,7 @@ export async function getOrCreateSession(): Promise<Session | null> {
         '{}', '{}'
       )
       RETURNING *
-    ` as Session[]
+    ` as unknown as Session[]
     
     return newSessions[0] || null
   } catch (error) {
