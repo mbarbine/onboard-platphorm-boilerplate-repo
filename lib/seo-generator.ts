@@ -384,7 +384,7 @@ export async function updateDocumentSEO(
            source_url, author_name, published_at
     FROM documents
     WHERE slug = ${slug} AND tenant_id = ${DEFAULT_TENANT_ID}
-  ` as DocumentMeta[]
+  ` as unknown as DocumentMeta[]
 
   if (docs.length === 0) return
 
@@ -400,7 +400,7 @@ export async function updateAllDocumentsSEO(baseUrl: string): Promise<number> {
     WHERE tenant_id = ${DEFAULT_TENANT_ID}
       AND status = 'published'
       AND deleted_at IS NULL
-  ` as DocumentMeta[]
+  ` as unknown as DocumentMeta[]
   
   // Parallel updates with concurrency limit
   const CHUNK_SIZE = 10

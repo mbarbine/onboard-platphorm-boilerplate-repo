@@ -40,9 +40,9 @@ export async function GET() {
     const settingsObj: Record<string, unknown> = {}
     for (const row of settings) {
       try {
-        settingsObj[row.key] = JSON.parse(row.value as string)
+        settingsObj[row.key as string] = JSON.parse(row.value as string)
       } catch {
-        settingsObj[row.key] = row.value
+        settingsObj[row.key as string] = row.value
       }
     }
     

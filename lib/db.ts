@@ -19,8 +19,8 @@ function getClient(): InternalClient {
 // so the resolved return type is Record<string, any>[].  The conditional union
 // that TypeScript infers through the Proxy wrapper is too wide for strict mode,
 // hence the explicit call-signature below.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Row = Record<string, any>
+//
+type Row = Record<string, unknown>
 export interface SqlClient {
   (strings: TemplateStringsArray, ...values: unknown[]): Promise<Row[]>
   /** Inject raw SQL into a template literal (not a standalone query) */
