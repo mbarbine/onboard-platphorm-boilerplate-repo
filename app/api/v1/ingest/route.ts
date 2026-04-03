@@ -6,14 +6,14 @@ import { generateSEOMetadata, generateAEOMetadata, generateGEOMetadata } from '@
 import { generateEmojiSummary } from '@/lib/emoji'
 import { generateSimpleSlug } from '@/lib/auto-name'
 import { logger } from '@/lib/logger'
-import { SITE_NAME } from '@/lib/site-config'
+import {  SITE_NAME , BASE_URL } from '@/lib/site-config'
 
 async function getBaseUrl(): Promise<string> {
   try {
     const result = await sql`SELECT value FROM settings WHERE tenant_id = ${DEFAULT_TENANT_ID} AND key = 'base_url'`
     if (result[0]?.value) return JSON.parse(result[0].value as string)
   } catch { /* ignore */ }
-  return 'https://docs.platphormnews.com'
+  return BASE_URL
 }
 
 function extractDomain(url: string): string {

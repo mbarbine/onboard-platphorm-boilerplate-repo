@@ -78,8 +78,8 @@ export async function validateApiKey(
 
     return {
       valid: true,
-      tenantId: result[0].tenant_id,
-      scopes: result[0].scopes || ['read'],
+      tenantId: result[0].tenant_id as string,
+      scopes: (result[0].scopes as string[]) || ['read'],
     }
   } catch {
     return { valid: false, tenantId: DEFAULT_TENANT_ID, scopes: [] }
@@ -158,7 +158,7 @@ export async function triggerWebhooks(
 
     for (const webhook of webhooks) {
       const signature = crypto
-        .createHmac('sha256', webhook.secret)
+        .createHmac('sha256', webhook.secret as string)
         .update(JSON.stringify(payload))
         .digest('hex')
 
@@ -170,7 +170,7 @@ export async function triggerWebhooks(
       // Fire and forget with timeout - in production you'd use a queue
       const deliveryController = new AbortController()
       const deliveryTimeout = setTimeout(() => deliveryController.abort(), 10000) // 10s timeout
-      fetch(webhook.url, {
+      fetch(webhook.url as string, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

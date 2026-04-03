@@ -9,7 +9,7 @@ const DEFAULT_TENANT = '00000000-0000-0000-0000-000000000001'
 const DEFAULTS: Record<string, string> = {
   auto_approve_submissions: 'false',
   admin_password_hash: '""',
-  base_url: '"https://docs.platphormnews.com"',
+  base_url: JSON.stringify(BASE_URL),
   default_locale: '"en"',
   site_name: JSON.stringify(SITE_NAME),
   github_repo: JSON.stringify(GITHUB_REPO),
@@ -40,9 +40,9 @@ export async function GET() {
     const settingsObj: Record<string, unknown> = {}
     for (const row of settings) {
       try {
-        settingsObj[row.key] = JSON.parse(row.value as string)
+        settingsObj[row.key as string] = JSON.parse(row.value as string)
       } catch {
-        settingsObj[row.key] = row.value
+        settingsObj[row.key as string] = row.value
       }
     }
     
