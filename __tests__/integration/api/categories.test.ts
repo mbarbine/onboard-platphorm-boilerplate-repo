@@ -76,6 +76,7 @@ describe('GET /api/v1/categories', () => {
 
     expect(response.status).toBe(500)
     expect(data.success).toBe(false)
+    expect(data.error.code).toBe('FETCH_ERROR')
   })
 })
 
@@ -180,5 +181,31 @@ describe('POST /api/v1/categories', () => {
 
     expect(response.status).toBe(409)
     expect(data.error.code).toBe('CONFLICT')
+  })
+
+  it('handles database errors during creation', async () => {
+    // Auth
+    mockSql.mockResolvedValueOnce([
+      { tenant_id: '00000000-0000-0000-0000-000000000001', scopes: ['write'] },
+    ] as never)
+    mockSql.mockResolvedValueOnce([] as never) // last_used_at
+
+    // Check slug collision
+    mockSql.mockRejectedValueOnce(new Error('DB error') as never)
+
+    const request = createRequest('http://localhost:3000/api/v1/categories', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer test_key',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ slug: 'new-cat', name: 'New Category' }),
+    })
+
+    const response = await POST(request)
+    const data = await response.json()
+
+    expect(response.status).toBe(500)
+    expect(data.error.code).toBe('CREATE_ERROR')
   })
 })
