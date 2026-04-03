@@ -50,7 +50,7 @@ async function getBaseUrl(): Promise<string> {
       return baseUrlSchema.parse(parsed)
     }
   } catch { /* ignore */ }
-  return 'https://docs.platphormnews.com'
+  return BASE_URL
 }
 
 // Uses shared auto-name module for slug generation (see lib/auto-name.ts)

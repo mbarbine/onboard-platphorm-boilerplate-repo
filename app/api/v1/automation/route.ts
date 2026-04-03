@@ -3,8 +3,7 @@ import { sql, DEFAULT_TENANT_ID } from '@/lib/db'
 import { generateSEOMetadata, generateShareLinks, generateStructuredData } from '@/lib/seo-generator'
 import { generateEmojiSummary } from '@/lib/emoji'
 import { parseMarkdown, extractTableOfContents } from '@/lib/markdown'
-import { SITE_NAME } from '@/lib/site-config'
-import { logger } from '@/lib/logger'
+import {  SITE_NAME , BASE_URL } from '@/lib/site-config'
 
 /**
  * Automation API - Batch operations and workflow integration
@@ -403,7 +402,7 @@ async function getBaseUrl(): Promise<string> {
   } catch {
     // ignore
   }
-  return 'https://docs.platphormnews.com'
+  return BASE_URL
 }
 
 // GET endpoint for simple health/stats

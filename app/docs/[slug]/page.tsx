@@ -4,7 +4,7 @@ import { Metadata } from 'next'
 import { sql, DEFAULT_TENANT_ID, Document, Category } from '@/lib/db'
 import { getCategories } from '@/lib/data'
 import { extractFAQFromContent } from '@/lib/seo-generator'
-import { SITE_NAME, ORG_NAME } from '@/lib/site-config'
+import {  SITE_NAME, ORG_NAME , BASE_URL } from '@/lib/site-config'
 import { DocsLayout } from '@/components/docs-layout'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { Badge } from '@/components/ui/badge'
@@ -31,7 +31,7 @@ async function getBaseUrl(): Promise<string> {
     const result = await sql`SELECT value FROM settings WHERE tenant_id = ${DEFAULT_TENANT_ID} AND key = 'base_url'`
     if (result[0]?.value) return JSON.parse(result[0].value as string)
   } catch { /* ignore */ }
-  return 'https://docs.platphormnews.com'
+  return BASE_URL
 }
 
 async function getDocument(slug: string): Promise<Document | null> {

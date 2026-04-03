@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Zap, Wrench, Database, MessageSquare } from 'lucide-react'
 
-import { SITE_NAME } from '@/lib/site-config'
+import {  SITE_NAME , BASE_URL } from '@/lib/site-config'
 
 export const metadata = {
   title: 'MCP Integration',
@@ -25,7 +25,7 @@ async function getBaseUrl(): Promise<string> {
   } catch {
     // ignore
   }
-  return 'https://docs.platphormnews.com'
+  return BASE_URL
 }
 
 const mcpTools = [

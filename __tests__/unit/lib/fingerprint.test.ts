@@ -1,6 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-
-vi.mock('@/lib/site-config', () => ({ SESSION_SALT: 'test-salt-for-tests' }))
+process.env.SESSION_SALT = 'test_salt'
+import { describe, it, expect, vi } from 'vitest'
 
 // Mock db module to avoid requiring DATABASE_URL
 vi.mock('@/lib/db', () => ({
