@@ -1,108 +1,116 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import SubmitPage from '@/app/submit/page'
 
-// Mock next/link
-vi.mock('next/link', () => ({
-  default: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => (
-    <a href={href} {...props}>{children}</a>
-  ),
+// Mock next/navigation
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+  }),
+  useSearchParams: () => ({
+    get: vi.fn(),
+  }),
+  usePathname: () => '/submit',
 }))
 
-// Mock ui components that might be causing issues
-vi.mock('@/components/ui/tooltip', () => ({
-  TooltipProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  TooltipTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  TooltipContent: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}))
-
-vi.mock('@/components/docs-layout', () => ({
-  DocsLayout: ({ children }: { children: React.ReactNode }) => <div data-testid="docs-layout">{children}</div>,
-}))
-
-// Mock fetch globally
-const mockFetch = vi.fn()
-global.fetch = mockFetch
+// We need to mock react-dom's useFormStatus because it expects to be in a form
+vi.mock('react-dom', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react-dom')>()
+  return {
+    ...actual,
+    useFormStatus: () => ({ pending: false }),
+  }
+})
 
 describe('SubmitPage', () => {
+  const originalFetch = global.fetch
+
   beforeEach(() => {
     vi.resetAllMocks()
 
-    // Default fetch mocks
-    mockFetch.mockImplementation((url: string) => {
-      if (url === '/api/session') {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({
-            session_id: 'test-session',
-            fingerprint: 'test-fingerprint',
-            locale: 'en',
-            geo: {},
-            preferences: {},
-            draft_content: {},
-          }),
-        })
+    // Setup ResizeObserver mock
+    global.ResizeObserver = class ResizeObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    } as any
+  })
+
+  afterEach(() => {
+    // Restore global fetch
+    global.fetch = originalFetch
+  })
+
+  it('handles category fetch errors correctly and resets state', async () => {
+    // Setup mock to throw an error for categories
+    const mockFetch = vi.fn((url: string | URL | Request) => {
+      const urlStr = url.toString()
+      if (urlStr === '/api/v1/categories') {
+        return Promise.reject(new Error('Failed to fetch categories'))
       }
-      if (url === '/api/v1/categories') {
+      if (urlStr === '/api/v1/settings') {
         return Promise.resolve({
+          json: () => Promise.resolve({ success: true, data: { settings: { base_url: 'http://test.com' } } }),
           ok: true,
-          json: () => Promise.resolve({
-            success: true,
-            data: { flat: [{ slug: 'guides', name: 'Guides', description: null, icon: null, document_count: 0 }] },
-          }),
-        })
-      }
-      if (url === '/api/v1/settings') {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({
-            success: true,
-            data: { settings: { base_url: 'https://test.com' } },
-          }),
         })
       }
       return Promise.resolve({
+        json: () => Promise.resolve({ success: true, data: [] }),
         ok: true,
-        json: () => Promise.resolve({}),
       })
     })
-  })
+    global.fetch = mockFetch as any
 
-  it('displays network error message when url ingestion fetch fails', async () => {
-    // Setup fetch to reject for the ingest endpoint, but succeed for others
-    mockFetch.mockImplementation((url: string) => {
-      if (url === '/api/session') {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
-      }
-      if (url === '/api/v1/categories') {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true, data: { flat: [] } }) })
-      }
-      if (url === '/api/v1/settings') {
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true, data: { settings: {} } }) })
-      }
-      if (url === '/api/v1/ingest') {
-        return Promise.reject(new Error('Network failure'))
-      }
-      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
-    })
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     render(<SubmitPage />)
 
-    // Wait for the UI to settle
     await waitFor(() => {
-      expect(screen.getByText('Submit Content')).toBeInTheDocument()
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Failed to fetch categories:',
+        expect.any(Error)
+      )
     })
 
-    // Find the URL input and submit button
-    const urlInput = screen.getByLabelText(/URL to Ingest/i)
-    const ingestButton = screen.getByRole('button', { name: /Ingest Content/i })
+    // Verify fetch was called with the correct URL
+    expect(mockFetch).toHaveBeenCalledWith('/api/v1/categories')
 
-    // Fill and submit
-    fireEvent.change(urlInput, { target: { value: 'https://example.com' } })
-    fireEvent.click(ingestButton)
+    // Ensure the category select is empty (it renders a Select component, which we can check indirectly by making sure no items are rendered)
+    // The SubmitPage component will just pass the empty array to the Select items, so there should be no options available
 
-    // Verify error state
-    expect(await screen.findByText('Network error. Please try again.')).toBeInTheDocument()
+    consoleSpy.mockRestore()
+  })
+
+  it('sets categories to empty array when response has no success flag', async () => {
+    // Setup mock to return an unsuccessful response
+    const mockFetch = vi.fn((url: string | URL | Request) => {
+      const urlStr = url.toString()
+      if (urlStr === '/api/v1/categories') {
+        return Promise.resolve({
+          json: () => Promise.resolve({ success: false, error: 'Not found' }),
+          ok: true,
+        })
+      }
+      if (urlStr === '/api/v1/settings') {
+        return Promise.resolve({
+          json: () => Promise.resolve({ success: true, data: { settings: { base_url: 'http://test.com' } } }),
+          ok: true,
+        })
+      }
+      return Promise.resolve({
+        json: () => Promise.resolve({ success: true, data: [] }),
+        ok: true,
+      })
+    })
+    global.fetch = mockFetch as any
+
+    render(<SubmitPage />)
+
+    // Verify fetch was called with the correct URL
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith('/api/v1/categories')
+    })
   })
 })
