@@ -45,7 +45,7 @@ async function getBaseUrl(): Promise<string> {
     const result = await sql`SELECT value FROM settings WHERE tenant_id = ${DEFAULT_TENANT_ID} AND key = 'base_url'`
     if (result[0]?.value) return JSON.parse(result[0].value as string)
   } catch { /* ignore */ }
-  return 'https://docs.platphormnews.com'
+  return BASE_URL
 }
 
 // Uses shared auto-name module for slug generation (see lib/auto-name.ts)

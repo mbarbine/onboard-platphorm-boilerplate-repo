@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Copy } from 'lucide-react'
 import { ApiCodeBlock } from './api-code-block'
 
-import { SITE_NAME } from '@/lib/site-config'
+import {  SITE_NAME , BASE_URL } from '@/lib/site-config'
 
 export const metadata = {
   title: 'API Reference',
@@ -40,7 +40,7 @@ async function getBaseUrl(): Promise<string> {
   } catch {
     // ignore
   }
-  return 'https://docs.platphormnews.com'
+  return BASE_URL
 }
 
 const endpoints = [
