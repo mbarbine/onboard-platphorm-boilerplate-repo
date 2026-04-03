@@ -41,12 +41,17 @@ const PROJECT_DOCS: Record<string, { file: string; description: string; category
   'coding':          { file: 'CODING.md',           description: 'Coding standards and development practices',          category: 'development'  },
 }
 
+const baseUrlSchema = z.string().url()
+
 async function getBaseUrl(): Promise<string> {
   try {
     const result = await sql`SELECT value FROM settings WHERE tenant_id = ${DEFAULT_TENANT_ID} AND key = 'base_url'`
-    if (result[0]?.value) return JSON.parse(result[0].value as string)
+    if (result[0]?.value) {
+      const parsed = JSON.parse(result[0].value as string)
+      return baseUrlSchema.parse(parsed)
+    }
   } catch { /* ignore */ }
-  return 'https://docs.platphormnews.com'
+  return BASE_URL
 }
 
 // Uses shared auto-name module for slug generation (see lib/auto-name.ts)
@@ -135,7 +140,7 @@ export function createMcpServer(): McpServer {
       const baseUrl = await getBaseUrl()
       const limit = Math.min(rawLimit ?? 20, 100)
       const offset = rawOffset ?? 0
-      const orderBy = sort === 'alphabetical' ? 'title ASC' : 'published_at DESC NULLS LAST'
+
 
       let docs: Document[]
       if (search) {
@@ -159,7 +164,7 @@ export function createMcpServer(): McpServer {
             AND deleted_at IS NULL AND status = 'published'
             ${category ? sql`AND category = ${category}` : sql``}
             ${tag ? sql`AND tags @> ${JSON.stringify([tag])}::jsonb` : sql``}
-          ORDER BY ${sql.unsafe(orderBy)}
+          ${sort === 'alphabetical' ? sql`ORDER BY title ASC` : sort === 'popular' ? sql`ORDER BY view_count DESC NULLS LAST` : sql`ORDER BY published_at DESC NULLS LAST`}
           LIMIT ${limit} OFFSET ${offset}
         ` as Document[]
       }
