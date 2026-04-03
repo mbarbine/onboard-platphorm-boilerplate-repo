@@ -366,20 +366,23 @@ async function executeCrossPost(input: Record<string, unknown>, baseUrl: string)
   if (!docs.length) throw new Error('Document not found')
   const doc = docs[0]
 
+  const integrations = await sql`
+    SELECT * FROM integrations
+    WHERE tenant_id = ${DEFAULT_TENANT_ID} AND name = ANY(${targets}::text[]) AND enabled = true
+  `
+  const integrationsMap = new Map(integrations.map(int => [int.name, int]))
+
   const results = []
   for (const target of targets) {
-    const integration = await sql`
-      SELECT * FROM integrations
-      WHERE tenant_id = ${DEFAULT_TENANT_ID} AND name = ${target} AND enabled = true
-    `
+    const integration = integrationsMap.get(target)
     
-    if (!integration.length) {
+    if (!integration) {
       results.push({ target, status: 'skipped', reason: 'Integration not found or disabled' })
       continue
     }
 
     try {
-      const mcpUrl = `${integration[0].base_url}${integration[0].mcp_path}`
+      const mcpUrl = `${integration.base_url}${integration.mcp_path}`
       const response = await fetch(mcpUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

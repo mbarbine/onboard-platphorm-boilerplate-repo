@@ -13,6 +13,7 @@ vi.mock('@/lib/db', () => ({
 }))
 
 vi.mock('@/lib/site-config', () => ({
+  SERVICE_NAME: 'test-service',
   API_KEY_PREFIX: 'ob_',
 }))
 
