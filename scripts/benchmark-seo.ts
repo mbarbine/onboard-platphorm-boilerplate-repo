@@ -4,6 +4,8 @@
  * Run with: npx tsx scripts/benchmark-seo.ts
  */
 
+import type { Document } from '../lib/db';
+
 // Mock DB
 const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
 let queryCount = 0;
@@ -37,7 +39,7 @@ async function sql(strings: TemplateStringsArray, ...values: any[]) {
 }
 
 // Mock SEO Generator
-async function generateSEOMetadata(doc: any, baseUrl: string) {
+async function generateSEOMetadata(doc: Pick<Document, 'title' | 'description' | 'slug'>, baseUrl: string) {
   return {
     ogTitle: doc.title,
     ogDescription: doc.description,
@@ -60,7 +62,7 @@ async function updateDocumentSEO(slug: string, baseUrl: string) {
 
   if (docs.length === 0) return;
 
-  const doc = docs[0];
+  const doc = docs[0] as Pick<Document, 'title' | 'description' | 'slug'>;
   const seo = await generateSEOMetadata(doc, baseUrl);
 
   await sql`
