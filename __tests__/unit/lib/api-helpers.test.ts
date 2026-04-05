@@ -4,6 +4,7 @@ import {
   generateSlug,
   hasScope,
   generateApiKey,
+  apiResponse,
 } from '@/lib/api-helpers'
 
 // Mock modules that depend on runtime
@@ -160,5 +161,41 @@ describe('generateApiKey', () => {
     const { key } = generateApiKey()
     // Prefix 'ob_' (3) + 32 bytes hex (64) = 67 characters
     expect(key.length).toBe(67)
+  })
+})
+
+describe('apiResponse', () => {
+  it('returns a basic response with just data', async () => {
+    const data = { id: 1, name: 'Test' }
+    const response = apiResponse(data)
+
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.success).toBe(true)
+    expect(body.data).toEqual(data)
+    expect(typeof body.meta.request_id).toBe('string')
+  })
+
+  it('returns a response with custom metadata', async () => {
+    const data = { id: 1, name: 'Test' }
+    const meta = { pagination: { total: 10, page: 1 } }
+    const response = apiResponse(data, meta)
+
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.success).toBe(true)
+    expect(body.data).toEqual(data)
+    expect(body.meta.pagination).toEqual(meta.pagination)
+    expect(typeof body.meta.request_id).toBe('string')
+  })
+
+  it('returns a response with custom status code', async () => {
+    const data = { id: 1, name: 'Test' }
+    const response = apiResponse(data, undefined, 201)
+
+    expect(response.status).toBe(201)
+    const body = await response.json()
+    expect(body.success).toBe(true)
+    expect(body.data).toEqual(data)
   })
 })
