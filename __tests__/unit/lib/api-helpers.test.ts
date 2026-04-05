@@ -1,9 +1,12 @@
 import { describe, it, expect, vi } from 'vitest'
+import { sql } from '@/lib/db'
+import { NextRequest } from 'next/server'
 import {
   getPaginationParams,
   generateSlug,
   hasScope,
   generateApiKey,
+  validateApiKey,
 } from '@/lib/api-helpers'
 
 // Mock modules that depend on runtime
@@ -160,5 +163,61 @@ describe('generateApiKey', () => {
     const { key } = generateApiKey()
     // Prefix 'ob_' (3) + 32 bytes hex (64) = 67 characters
     expect(key.length).toBe(67)
+  })
+})
+
+
+describe('validateApiKey', () => {
+  it('returns invalid if authorization header is missing', async () => {
+    const req = new Request('http://localhost') as NextRequest
+    const result = await validateApiKey(req)
+    expect(result.valid).toBe(false)
+    expect(result.tenantId).toBe('00000000-0000-0000-0000-000000000001')
+    expect(result.scopes).toEqual([])
+  })
+
+  it('returns invalid if authorization header does not start with Bearer', async () => {
+    const req = new Request('http://localhost', {
+      headers: { authorization: 'Basic xyz' }
+    }) as NextRequest
+    const result = await validateApiKey(req)
+    expect(result.valid).toBe(false)
+  })
+
+  it('returns invalid if database query returns empty array', async () => {
+    const req = new Request('http://localhost', {
+      headers: { authorization: 'Bearer some-token' }
+    }) as NextRequest
+    vi.mocked(sql).mockResolvedValueOnce([])
+    const result = await validateApiKey(req)
+    expect(result.valid).toBe(false)
+  })
+
+  it('returns invalid if database query throws an error', async () => {
+    const req = new Request('http://localhost', {
+      headers: { authorization: 'Bearer some-token' }
+    }) as NextRequest
+    vi.mocked(sql).mockRejectedValueOnce(new Error('Database connection failed'))
+    const result = await validateApiKey(req)
+    expect(result.valid).toBe(false)
+    expect(result.tenantId).toBe('00000000-0000-0000-0000-000000000001')
+    expect(result.scopes).toEqual([])
+  })
+
+  it('returns valid and parsed scopes if database query is successful', async () => {
+    const req = new Request('http://localhost', {
+      headers: { authorization: 'Bearer valid-token' }
+    }) as NextRequest
+    vi.mocked(sql).mockResolvedValueOnce([{
+      tenant_id: 'tenant-123',
+      scopes: ['read', 'write']
+    }] as any)
+    // Mock the second sql call (UPDATE api_keys)
+    vi.mocked(sql).mockResolvedValueOnce([] as any)
+
+    const result = await validateApiKey(req)
+    expect(result.valid).toBe(true)
+    expect(result.tenantId).toBe('tenant-123')
+    expect(result.scopes).toEqual(['read', 'write'])
   })
 })
