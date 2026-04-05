@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 import { sql, DEFAULT_TENANT_ID } from '@/lib/db'
 import { generateSEOMetadata, generateShareLinks, generateStructuredData } from '@/lib/seo-generator'
 import { generateEmojiSummary } from '@/lib/emoji'
@@ -105,7 +106,7 @@ async function handleBatchSEO(params: { document_ids?: string[], all?: boolean }
         WHERE id = ${doc.id}
       `
 
-      results.push({ id: doc.id, slug: doc.slug, status: 'updated' })
+      results.push({ id: doc.id as string, slug: doc.slug as string, status: 'updated' })
     }))
   }
 
@@ -138,20 +139,27 @@ async function handleBatchIndex(params: { document_ids?: string[], all?: boolean
     return NextResponse.json({ success: false, error: 'Provide document_ids or set all=true' }, { status: 400 })
   }
 
-  let indexed = 0
-  for (const doc of documents) {
-    const searchText = `${doc.title} ${doc.description || ''} ${doc.content}`
-    
-    // Upsert search index
-    await sql`
-      INSERT INTO search_index (document_id, tenant_id, content_vector)
-      VALUES (${doc.id}, ${doc.tenant_id}, to_tsvector('english', ${searchText}))
-      ON CONFLICT (document_id) DO UPDATE SET
-        content_vector = to_tsvector('english', ${searchText}),
-        updated_at = NOW()
-    `
-    indexed++
+  if (!documents.length) {
+    return NextResponse.json({ success: true, data: { indexed: 0 } })
   }
+
+  const documentIds = documents.map(d => d.id as string)
+  const tenantIds = documents.map(d => d.tenant_id as string)
+  const searchTexts = documents.map(d => `${d.title} ${d.description || ''} ${d.content}`)
+
+  await sql`
+    INSERT INTO search_index (document_id, tenant_id, content_vector)
+    SELECT u.document_id, u.tenant_id, to_tsvector('english', u.search_text)
+    FROM UNNEST(
+      ${documentIds}::uuid[],
+      ${tenantIds}::uuid[],
+      ${searchTexts}::text[]
+    ) AS u(document_id, tenant_id, search_text)
+    ON CONFLICT (document_id) DO UPDATE SET
+      content_vector = EXCLUDED.content_vector,
+      updated_at = NOW()
+  `
+  const indexed = documents.length
 
   return NextResponse.json({
     success: true,
