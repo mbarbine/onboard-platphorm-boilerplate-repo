@@ -2,15 +2,23 @@ process.env.SESSION_SALT = 'test_salt'
 import { describe, it, expect, vi } from 'vitest'
 
 // Mock db module to avoid requiring DATABASE_URL
+// Mock next/headers
+vi.mock('next/headers', () => ({
+  headers: vi.fn(),
+}))
+
 vi.mock('@/lib/db', () => ({
   sql: vi.fn(),
   DEFAULT_TENANT_ID: '00000000-0000-0000-0000-000000000001',
 }))
 
+import { headers } from 'next/headers'
+import { sql } from '@/lib/db'
 import {
   generateJA4Fingerprint,
   generateSessionHash,
   extractGeoInfo,
+  getOrCreateSession,
 } from '@/lib/fingerprint'
 
 describe('generateJA4Fingerprint', () => {
@@ -198,5 +206,86 @@ describe('extractGeoInfo', () => {
     expect(geo.country).toBe('DE')
     expect(geo.region).toBeNull()
     expect(geo.city).toBeNull()
+  })
+})
+
+
+describe('getOrCreateSession', () => {
+  const mockDate = new Date('2024-01-01T00:00:00Z')
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.useFakeTimers()
+    vi.setSystemTime(mockDate)
+
+    // Default mock for headers
+    const mockHeadersMap = new Map([
+      ['user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120'],
+      ['x-forwarded-for', '127.0.0.1'],
+    ])
+
+    vi.mocked(headers).mockResolvedValue({
+      get: (key: string) => mockHeadersMap.get(key) || null,
+    } as any)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('returns existing session and updates last_activity_at', async () => {
+    const existingSession = {
+      id: 'session-123',
+      tenant_id: 'tenant-1',
+      last_activity_at: new Date('2023-12-31T23:00:00Z'),
+    }
+
+    // First query (SELECT) returns session, second (UPDATE) returns empty
+    vi.mocked(sql).mockResolvedValueOnce([existingSession] as any)
+                  .mockResolvedValueOnce([] as any)
+
+    const session = await getOrCreateSession()
+
+    expect(session).toEqual(existingSession)
+    expect(sql).toHaveBeenCalledTimes(2)
+    // Verify SELECT query was called
+    expect(vi.mocked(sql).mock.calls[0][0].join('')).toContain('SELECT * FROM sessions')
+    // Verify UPDATE query was called
+    expect(vi.mocked(sql).mock.calls[1][0].join('')).toContain('UPDATE sessions')
+  })
+
+  it('creates a new session when none exists', async () => {
+    const newSession = {
+      id: 'session-456',
+      tenant_id: 'tenant-1',
+      created_at: mockDate,
+    }
+
+    // First query (SELECT) returns empty, second (INSERT) returns new session
+    vi.mocked(sql).mockResolvedValueOnce([] as any)
+                  .mockResolvedValueOnce([newSession] as any)
+
+    const session = await getOrCreateSession()
+
+    expect(session).toEqual(newSession)
+    expect(sql).toHaveBeenCalledTimes(2)
+    // Verify SELECT query was called
+    expect(vi.mocked(sql).mock.calls[0][0].join('')).toContain('SELECT * FROM sessions')
+    // Verify INSERT query was called
+    expect(vi.mocked(sql).mock.calls[1][0].join('')).toContain('INSERT INTO sessions')
+  })
+
+  it('returns null and logs error if database query fails', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const mockError = new Error('DB connection failed')
+
+    vi.mocked(sql).mockRejectedValueOnce(mockError)
+
+    const session = await getOrCreateSession()
+
+    expect(session).toBeNull()
+    expect(consoleSpy).toHaveBeenCalledWith('[v0] Session error:', mockError)
+
+    consoleSpy.mockRestore()
   })
 })
