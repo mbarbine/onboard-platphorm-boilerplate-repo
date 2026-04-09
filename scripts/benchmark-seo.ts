@@ -9,7 +9,19 @@ const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
 let queryCount = 0;
 const simulateDelay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-async function sql(strings: TemplateStringsArray, ...values: any[]) {
+interface BenchmarkDocument {
+  slug: string;
+  title: string;
+  description: string;
+  content: string;
+  category?: string;
+  tags?: string[];
+  source_url?: string;
+  author_name?: string;
+  published_at?: Date;
+}
+
+async function sql(strings: TemplateStringsArray, ...values: unknown[]) {
   queryCount++;
   const query = strings.join('?');
   // console.log(`[SQL] ${query}`);
@@ -37,7 +49,7 @@ async function sql(strings: TemplateStringsArray, ...values: any[]) {
 }
 
 // Mock SEO Generator
-async function generateSEOMetadata(doc: any, baseUrl: string) {
+async function generateSEOMetadata(doc: BenchmarkDocument, baseUrl: string) {
   return {
     ogTitle: doc.title,
     ogDescription: doc.description,
