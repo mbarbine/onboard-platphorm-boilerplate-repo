@@ -187,10 +187,9 @@ async function handleWorkflowIngest(params: { urls: string[], category?: string,
     return NextResponse.json({ success: false, error: 'Provide urls array' }, { status: 400 })
   }
 
-  const results = []
   const baseUrl = await getBaseUrl()
 
-  for (const url of params.urls.slice(0, 10)) { // Limit to 10 URLs per batch
+  const results = await Promise.all(params.urls.slice(0, 10).map(async (url) => { // Limit to 10 URLs per batch
     try {
       // Fetch the URL
       const response = await fetch(url, {
@@ -198,8 +197,7 @@ async function handleWorkflowIngest(params: { urls: string[], category?: string,
       })
       
       if (!response.ok) {
-        results.push({ url, status: 'error', error: `HTTP ${response.status}` })
-        continue
+        return { url, status: 'error', error: `HTTP ${response.status}` }
       }
 
       const html = await response.text()
@@ -265,19 +263,19 @@ async function handleWorkflowIngest(params: { urls: string[], category?: string,
         RETURNING id, slug
       `
 
-      results.push({
+      return {
         url,
         status: 'success',
         document: insertResult[0],
-      })
+      }
     } catch (error) {
-      results.push({
+      return {
         url,
         status: 'error',
         error: error instanceof Error ? error.message : 'Unknown error',
-      })
+      }
     }
-  }
+  }))
 
   return NextResponse.json({
     success: true,
