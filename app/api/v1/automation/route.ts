@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sql, DEFAULT_TENANT_ID } from '@/lib/db'
 import { generateSEOMetadata, generateShareLinks, generateStructuredData } from '@/lib/seo-generator'
 import { generateEmojiSummary } from '@/lib/emoji'
+import logger from '@/lib/logger'
 import { parseMarkdown, extractTableOfContents } from '@/lib/markdown'
 import {  SITE_NAME , BASE_URL } from '@/lib/site-config'
 
@@ -322,18 +323,35 @@ async function handleEmojiSummaries(params: { document_ids?: string[], all?: boo
     return NextResponse.json({ success: false, error: 'Provide document_ids or set all=true' }, { status: 400 })
   }
 
-  const results = []
-  for (const doc of documents) {
-    const summary = await generateEmojiSummary(doc.content as string, doc.title as string)
+  const CHUNK_SIZE = 10
+  const results: Array<{ id: string, emoji_summary: string }> = []
+
+  for (let i = 0; i < documents.length; i += CHUNK_SIZE) {
+    const chunk = documents.slice(i, i + CHUNK_SIZE)
     
-    await sql`
-      UPDATE documents SET
-        emoji_summary = ${summary.emojis},
-        updated_at = NOW()
-      WHERE id = ${doc.id}
-    `
+    const chunkResults = await Promise.all(chunk.map(async (doc) => {
+      const summary = await generateEmojiSummary(doc.content as string, doc.title as string)
+      return { id: doc.id as string, emoji_summary: summary.emojis }
+    }))
+
+    if (chunkResults.length > 0) {
+      const ids = chunkResults.map(r => r.id)
+      const emojis = chunkResults.map(r => r.emoji_summary)
+
+      await sql`
+        UPDATE documents SET
+          emoji_summary = update_data.emoji_summary,
+          updated_at = NOW()
+        FROM UNNEST(
+          ${ids}::uuid[],
+          ${emojis}::text[]
+        ) AS update_data(id, emoji_summary)
+        WHERE documents.id = update_data.id
+      `
 
     results.push({ id: doc.id as string, emoji_summary: summary.emojis })
+      results.push(...chunkResults)
+    }
   }
 
   return NextResponse.json({
