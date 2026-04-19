@@ -86,7 +86,7 @@ async function handleBatchSEO(params: { document_ids?: string[], all?: boolean }
   for (let i = 0; i < documents.length; i += CHUNK_SIZE) {
     const chunk = documents.slice(i, i + CHUNK_SIZE)
 
-    await Promise.all(chunk.map(async (doc) => {
+    const chunkResults = await Promise.all(chunk.map(async (doc) => {
       const seo = await generateSEOMetadata({
         title: doc.title as string,
         description: doc.description as string || '',
@@ -94,19 +94,44 @@ async function handleBatchSEO(params: { document_ids?: string[], all?: boolean }
         slug: doc.slug as string,
         category: doc.category as string,
       }, baseUrl)
+      return { doc, seo }
+    }))
 
-      await sql`
-        UPDATE documents SET
-          og_title = ${seo.ogTitle},
-          og_description = ${seo.ogDescription},
-          og_image = ${seo.ogImage},
-          canonical_url = ${seo.canonicalUrl},
-          reading_time_minutes = ${seo.readingTimeMinutes},
-          word_count = ${seo.wordCount},
-          updated_at = NOW()
-        WHERE id = ${doc.id}
-      `
+    const ids = chunkResults.map(r => r.doc.id as string)
+    const ogTitles = chunkResults.map(r => r.seo.ogTitle)
+    const ogDescriptions = chunkResults.map(r => r.seo.ogDescription)
+    const ogImages = chunkResults.map(r => r.seo.ogImage)
+    const canonicalUrls = chunkResults.map(r => r.seo.canonicalUrl)
+    const readingTimeMinutes = chunkResults.map(r => r.seo.readingTimeMinutes)
+    const wordCounts = chunkResults.map(r => r.seo.wordCount)
 
+    await sql`
+      UPDATE documents AS d
+      SET
+        og_title = data.og_title,
+        og_description = data.og_description,
+        og_image = data.og_image,
+        canonical_url = data.canonical_url,
+        reading_time_minutes = data.reading_time_minutes,
+        word_count = data.word_count,
+        updated_at = NOW()
+      FROM (
+        SELECT * FROM UNNEST(
+          ${ids}::uuid[],
+          ${ogTitles}::text[],
+          ${ogDescriptions}::text[],
+          ${ogImages}::text[],
+          ${canonicalUrls}::text[],
+          ${readingTimeMinutes}::int[],
+          ${wordCounts}::int[]
+        ) AS t(id, og_title, og_description, og_image, canonical_url, reading_time_minutes, word_count)
+      ) AS data
+      WHERE d.id = data.id
+    `
+
+    for (const { doc } of chunkResults) {
+      results.push({ id: doc.id as string, slug: doc.slug as string, status: 'updated' })
+    }
       results.push({ id: String(doc.id), slug: String(doc.slug), status: 'updated' })
       results.push({ id: doc.id as string, slug: doc.slug as string, status: 'updated' })
     }))
