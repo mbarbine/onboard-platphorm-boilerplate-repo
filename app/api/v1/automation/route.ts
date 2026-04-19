@@ -1,4 +1,4 @@
-import { logger } from "@/lib/logger"
+import logger from '@/lib/logger'
 import { NextRequest, NextResponse } from 'next/server'
 import { sql, DEFAULT_TENANT_ID } from '@/lib/db'
 import { generateSEOMetadata, generateShareLinks, generateStructuredData } from '@/lib/seo-generator'
@@ -141,18 +141,25 @@ async function handleBatchIndex(params: { document_ids?: string[], all?: boolean
   }
 
   let indexed = 0
-  for (const doc of documents) {
-    const searchText = `${doc.title} ${doc.description || ''} ${doc.content}`
-    
-    // Upsert search index
+  if (documents.length > 0) {
+    const documentIds = documents.map((doc: any) => doc.id)
+    const tenantIds = documents.map((doc: any) => doc.tenant_id)
+    const searchTexts = documents.map((doc: any) => `${doc.title} ${doc.description || ''} ${doc.content}`)
+
+    // Upsert search index using UNNEST to avoid N+1 queries
     await sql`
       INSERT INTO search_index (document_id, tenant_id, content_vector)
-      VALUES (${doc.id}, ${doc.tenant_id}, to_tsvector('english', ${searchText}))
+      SELECT document_id, tenant_id, to_tsvector('english', search_text)
+      FROM UNNEST(
+        ${documentIds}::uuid[],
+        ${tenantIds}::uuid[],
+        ${searchTexts}::text[]
+      ) AS t(document_id, tenant_id, search_text)
       ON CONFLICT (document_id) DO UPDATE SET
-        content_vector = to_tsvector('english', ${searchText}),
+        content_vector = EXCLUDED.content_vector,
         updated_at = NOW()
     `
-    indexed++
+    indexed = documents.length
   }
 
   return NextResponse.json({
@@ -342,6 +349,7 @@ async function handleEmojiSummaries(params: { document_ids?: string[], all?: boo
         WHERE documents.id = update_data.id
       `
 
+    results.push({ id: doc.id as string, emoji_summary: summary.emojis })
       results.push(...chunkResults)
     }
   }
