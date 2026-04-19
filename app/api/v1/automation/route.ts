@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sql, DEFAULT_TENANT_ID } from '@/lib/db'
 import { generateSEOMetadata, generateShareLinks, generateStructuredData } from '@/lib/seo-generator'
 import { generateEmojiSummary } from '@/lib/emoji'
-import logger from '@/lib/logger'
 import { parseMarkdown, extractTableOfContents } from '@/lib/markdown'
 import {  SITE_NAME , BASE_URL } from '@/lib/site-config'
 
@@ -91,7 +90,7 @@ async function handleBatchSEO(params: { document_ids?: string[], all?: boolean }
         title: doc.title as string,
         description: doc.description as string || '',
         content: doc.content as string,
-        slug: doc.slug as string,
+        slug: String(doc.slug) as string,
         category: doc.category as string,
       }, baseUrl)
       return { doc, seo }
@@ -132,10 +131,8 @@ async function handleBatchSEO(params: { document_ids?: string[], all?: boolean }
     for (const { doc } of chunkResults) {
       results.push({ id: doc.id as string, slug: doc.slug as string, status: 'updated' })
     }
-      results.push({ id: String(doc.id), slug: String(doc.slug), status: 'updated' })
-      results.push({ id: doc.id as string, slug: doc.slug as string, status: 'updated' })
-    }))
   }
+
 
   return NextResponse.json({
     success: true,
@@ -375,10 +372,10 @@ async function handleEmojiSummaries(params: { document_ids?: string[], all?: boo
         WHERE documents.id = update_data.id
       `
 
-    results.push({ id: doc.id as string, emoji_summary: summary.emojis })
       results.push(...chunkResults)
     }
   }
+
 
   return NextResponse.json({
     success: true,
