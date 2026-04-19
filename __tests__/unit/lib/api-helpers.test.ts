@@ -4,7 +4,9 @@ import {
   generateSlug,
   hasScope,
   generateApiKey,
+  updateSearchIndex,
 } from '@/lib/api-helpers'
+import { sql } from '@/lib/db'
 
 // Mock modules that depend on runtime
 vi.mock('@/lib/db', () => ({
@@ -160,5 +162,44 @@ describe('generateApiKey', () => {
     const { key } = generateApiKey()
     // Prefix 'ob_' (3) + 32 bytes hex (64) = 67 characters
     expect(key.length).toBe(67)
+  })
+})
+
+describe('updateSearchIndex', () => {
+  it('updates the search index with all fields', async () => {
+    const docId = 'doc-123'
+    const tenantId = 'tenant-456'
+    const title = 'Test Title'
+    const content = 'Test Content'
+    const description = 'Test Description'
+
+    await updateSearchIndex(docId, tenantId, title, content, description)
+
+    expect(sql).toHaveBeenCalled()
+    const call = vi.mocked(sql).mock.calls[0]
+
+    // searchText = [title, description || '', content].join(' ')
+    const expectedSearchText = `${title} ${description} ${content}`
+
+    expect(call[1]).toBe(docId)
+    expect(call[2]).toBe(tenantId)
+    expect(call[3]).toBe(expectedSearchText)
+    expect(call[4]).toBe(expectedSearchText)
+  })
+
+  it('handles null description', async () => {
+    const docId = 'doc-123'
+    const tenantId = 'tenant-456'
+    const title = 'Test Title'
+    const content = 'Test Content'
+    const description = null
+
+    await updateSearchIndex(docId, tenantId, title, content, description)
+
+    const expectedSearchText = `${title}  ${content}` // two spaces because description is empty string
+    const lastCall = vi.mocked(sql).mock.calls[vi.mocked(sql).mock.calls.length - 1]
+
+    expect(lastCall[3]).toBe(expectedSearchText)
+    expect(lastCall[4]).toBe(expectedSearchText)
   })
 })
