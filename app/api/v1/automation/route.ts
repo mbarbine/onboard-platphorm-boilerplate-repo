@@ -107,6 +107,7 @@ async function handleBatchSEO(params: { document_ids?: string[], all?: boolean }
         WHERE id = ${doc.id}
       `
 
+      results.push({ id: String(doc.id), slug: String(doc.slug), status: 'updated' })
       results.push({ id: doc.id as string, slug: doc.slug as string, status: 'updated' })
     }))
   }
