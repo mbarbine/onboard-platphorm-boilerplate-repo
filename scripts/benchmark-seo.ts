@@ -12,7 +12,6 @@ const simulateDelay = (ms: number) => new Promise(resolve => setTimeout(resolve,
 async function sql(strings: TemplateStringsArray, ...values: any[]) {
   queryCount++;
   const query = strings.join('?');
-  // console.log(`[SQL] ${query}`);
   await simulateDelay(10); // 10ms simulated latency
 
   if (query.includes('SELECT slug FROM documents')) {
