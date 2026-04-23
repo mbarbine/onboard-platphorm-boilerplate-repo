@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { SITE_NAME, SITE_DESCRIPTION, SERVICE_NAME } from '@/lib/site-config'
+import {
+  SITE_NAME,
+  SITE_DESCRIPTION,
+  SERVICE_NAME,
+  MCP_REGISTRY_URL,
+  NETWORK_GRAPH_URL,
+  BASE_URL,
+  ECOSYSTEM,
+} from '@/lib/site-config'
 
 /**
  * MCP Registry Registration Endpoint
@@ -8,24 +16,33 @@ import { SITE_NAME, SITE_DESCRIPTION, SERVICE_NAME } from '@/lib/site-config'
  * to discover and index this MCP server.
  */
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL 
-  ? `https://${process.env.VERCEL_URL}` 
-  : 'http://localhost:3000'
+const FALLBACK_BASE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : BASE_URL)
 
 export async function GET(request: NextRequest) {
-  const serverUrl = request.nextUrl.origin || BASE_URL
+  const serverUrl = request.nextUrl.origin || FALLBACK_BASE_URL
 
   return NextResponse.json({
     // MCP Server Metadata
     name: SITE_NAME,
     description: SITE_DESCRIPTION,
     version: '1.0.0',
+    service: 'platphorm-mcp',
+    role: 'mcp_global',
     
     // MCP Endpoint
     mcp_endpoint: `${serverUrl}/api/mcp`,
     protocol: 'JSON-RPC 2.0',
     
     // Capabilities
+    supports: {
+      docs: true,
+      mcp: true,
+      sse: true,
+      callbacks: true,
+      auth: false,
+    },
     capabilities: {
       tools: true,
       resources: true,
@@ -124,6 +141,7 @@ export async function GET(request: NextRequest) {
     
     // Discovery Files
     discovery: {
+      capabilities: `${serverUrl}/api/capabilities`,
       llms_txt: `${serverUrl}/llms.txt`,
       llms_full: `${serverUrl}/llms-full.txt`,
       llms_index: `${serverUrl}/llms-index.json`,
@@ -139,6 +157,11 @@ export async function GET(request: NextRequest) {
       api_docs: `${serverUrl}/docs/api`,
       mcp_docs: `${serverUrl}/docs/mcp`,
       submit: `${serverUrl}/submit`
+    },
+    ecosystem: {
+      mcp_hub: ECOSYSTEM.mcp,
+      trace: ECOSYSTEM.trace,
+      graph: NETWORK_GRAPH_URL,
     },
     
     // Server Info
@@ -169,7 +192,58 @@ export async function POST(request: NextRequest) {
   // Handle registration ping from MCP registries
   try {
     const body = await request.json()
-    const serverUrl = request.nextUrl.origin || BASE_URL
+    const serverUrl = request.nextUrl.origin || FALLBACK_BASE_URL
+    const apiKey = process.env.PLATPHORM_API_KEY || ''
+
+    const payload = {
+      service: 'platphorm-mcp',
+      role: 'mcp_global',
+      version: '0.1.0',
+      supports: {
+        docs: true,
+        mcp: true,
+        sse: true,
+        callbacks: true,
+        auth: false,
+      },
+      mcp: {
+        endpoint: `${serverUrl}/api/mcp`,
+        protocol_versions: ['2025-11-25'],
+        tools: true,
+        resources: true,
+        prompts: true,
+      },
+      discoverability: {
+        docs: `${serverUrl}/api/docs`,
+        health: `${serverUrl}/api/health`,
+        version: `${serverUrl}/api/version`,
+        capabilities: `${serverUrl}/api/capabilities`,
+        llms_txt: `${serverUrl}/llms.txt`,
+        llms_full: `${serverUrl}/llms-full.txt`,
+        robots: `${serverUrl}/robots.txt`,
+        sitemap: `${serverUrl}/sitemap.xml`,
+      },
+    }
+
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    }
+    if (apiKey) {
+      headers.Authorization = `Bearer ${apiKey}`
+    }
+
+    const [mcpRegistry, networkGraph] = await Promise.allSettled([
+      fetch(MCP_REGISTRY_URL, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      }),
+      fetch(NETWORK_GRAPH_URL, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      }),
+    ])
     
     return NextResponse.json({
       success: true,
@@ -178,6 +252,22 @@ export async function POST(request: NextRequest) {
         name: SITE_NAME,
         mcp_endpoint: `${serverUrl}/api/mcp`,
         version: '1.0.0'
+      },
+      registration: {
+        mcp_registry: {
+          endpoint: MCP_REGISTRY_URL,
+          status:
+            mcpRegistry.status === 'fulfilled'
+              ? mcpRegistry.value.status
+              : 'failed',
+        },
+        network_graph: {
+          endpoint: NETWORK_GRAPH_URL,
+          status:
+            networkGraph.status === 'fulfilled'
+              ? networkGraph.value.status
+              : 'failed',
+        },
       },
       received: body,
       timestamp: new Date().toISOString()

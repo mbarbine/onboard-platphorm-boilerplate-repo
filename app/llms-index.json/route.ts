@@ -66,16 +66,31 @@ export async function GET() {
       },
       mcp: `${baseUrl}/api/mcp`,
       discovery: {
+        docs: `${baseUrl}/api/docs`,
+        health: `${baseUrl}/api/health`,
+        version: `${baseUrl}/api/version`,
+        capabilities: `${baseUrl}/api/capabilities`,
         llms_txt: `${baseUrl}/llms.txt`,
         llms_full: `${baseUrl}/llms-full.txt`,
         llms_index: `${baseUrl}/llms-index.json`,
         sitemap: `${baseUrl}/sitemap.xml`,
+        robots: `${baseUrl}/robots.txt`,
         rss: `${baseUrl}/rss.xml`,
       },
     },
     
     mcp: {
-      protocol_version: '2024-11-05',
+      service: 'platphorm-mcp',
+      role: 'mcp_global',
+      version: '0.1.0',
+      supports: {
+        docs: true,
+        mcp: true,
+        sse: true,
+        callbacks: true,
+        auth: false,
+      },
+      protocol_version: '2025-11-25',
       tools: [
         { name: 'list_documents', description: 'List documentation with filtering' },
         { name: 'get_document', description: 'Get a document by slug' },
@@ -94,6 +109,11 @@ export async function GET() {
         { name: 'summarize_category', description: 'Summarize a category' },
         { name: 'compare_docs', description: 'Compare two documents' },
       ],
+    },
+
+    ecosystem: {
+      mcp_hub: 'https://mcp.platphormnews.com',
+      trace: 'https://trace.platphormnews.com',
     },
     
     categories: categories.map(cat => ({

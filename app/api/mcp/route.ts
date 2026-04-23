@@ -1162,6 +1162,23 @@ export async function POST(req: Request): Promise<Response> {
 export async function GET(): Promise<NextResponse> {
   const baseUrl = await getBaseUrl()
   return NextResponse.json({
+    service: 'platphorm-mcp',
+    role: 'mcp_global',
+    service_version: '0.1.0',
+    supports: {
+      docs: true,
+      mcp: true,
+      sse: true,
+      callbacks: true,
+      auth: false,
+    },
+    mcp: {
+      endpoint: '/api/mcp',
+      protocol_versions: ['2025-11-25'],
+      tools: true,
+      resources: true,
+      prompts: true,
+    },
     name: `${SERVICE_NAME}-mcp`,
     version: '2.0.0',
     protocol_version: '2024-11-05',
@@ -1186,5 +1203,15 @@ export async function GET(): Promise<NextResponse> {
       'docs://tags', 'docs://stats', 'docs://sitemap', 'docs://llms',
     ],
     prompts: ['explain_doc', 'summarize_category', 'compare_docs', 'generate_faq', 'translate_doc', 'improve_seo'],
+    discoverability: {
+      docs: `${baseUrl}/api/docs`,
+      health: `${baseUrl}/api/health`,
+      version: `${baseUrl}/api/version`,
+      capabilities: `${baseUrl}/api/capabilities`,
+      llms_txt: `${baseUrl}/llms.txt`,
+      llms_full: `${baseUrl}/llms-full.txt`,
+      robots: `${baseUrl}/robots.txt`,
+      sitemap: `${baseUrl}/sitemap.xml`,
+    },
   })
 }

@@ -1,3 +1,5 @@
+export {};
+
 const simulateDelay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const fetchMock = async (url: string) => {

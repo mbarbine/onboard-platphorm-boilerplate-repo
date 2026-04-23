@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-04-22T21:09:31.018Z",
+  "endpoint": "https://api.v0.dev/v1/projects",
+  "http_status": 200,
+  "request": {
+    "name": "onboard-platphorm-bp",
+    "description": "Boilerplate docs platform for Platphorm network"
+  },
+  "response": {
+    "id": "GtUSmOZq24A",
+    "name": "onboard-platphorm-bp",
+    "url": null,
+    "object": "project",
+    "privacy": "private",
+    "vercelProjectId": "prj_I74RFQp3xzE8QmpaaEuICnI3jhlU"
+  }
+}

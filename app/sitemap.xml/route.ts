@@ -62,7 +62,14 @@ export async function GET() {
     { url: '/submit', priority: 0.5, changefreq: 'monthly', lastmod: now },
     { url: '/search', priority: 0.5, changefreq: 'daily', lastmod: now },
     { url: '/settings', priority: 0.3, changefreq: 'monthly', lastmod: now },
+    { url: '/api/docs', priority: 0.7, changefreq: 'daily', lastmod: now },
+    { url: '/api/health', priority: 0.6, changefreq: 'daily', lastmod: now },
+    { url: '/api/version', priority: 0.6, changefreq: 'daily', lastmod: now },
+    { url: '/api/capabilities', priority: 0.8, changefreq: 'daily', lastmod: now },
+    { url: '/api/mcp', priority: 0.8, changefreq: 'daily', lastmod: now },
     { url: '/llms.txt', priority: 0.4, changefreq: 'daily', lastmod: latestDocUpdate },
+    { url: '/llms-full.txt', priority: 0.4, changefreq: 'daily', lastmod: latestDocUpdate },
+    { url: '/robots.txt', priority: 0.4, changefreq: 'daily', lastmod: now },
     { url: '/rss.xml', priority: 0.4, changefreq: 'daily', lastmod: latestDocUpdate },
   ]
 

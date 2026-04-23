@@ -3,9 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { sql, DEFAULT_TENANT_ID } from '@/lib/db'
 import { generateSEOMetadata, generateShareLinks, generateStructuredData } from '@/lib/seo-generator'
 import { generateEmojiSummary } from '@/lib/emoji'
-import logger from '@/lib/logger'
 import { parseMarkdown, extractTableOfContents } from '@/lib/markdown'
-import {  SITE_NAME , BASE_URL } from '@/lib/site-config'
+import { SITE_NAME, BASE_URL } from '@/lib/site-config'
 
 /**
  * Automation API - Batch operations and workflow integration
@@ -132,9 +131,6 @@ async function handleBatchSEO(params: { document_ids?: string[], all?: boolean }
     for (const { doc } of chunkResults) {
       results.push({ id: doc.id as string, slug: doc.slug as string, status: 'updated' })
     }
-      results.push({ id: String(doc.id), slug: String(doc.slug), status: 'updated' })
-      results.push({ id: doc.id as string, slug: doc.slug as string, status: 'updated' })
-    }))
   }
 
   return NextResponse.json({
@@ -375,7 +371,6 @@ async function handleEmojiSummaries(params: { document_ids?: string[], all?: boo
         WHERE documents.id = update_data.id
       `
 
-    results.push({ id: doc.id as string, emoji_summary: summary.emojis })
       results.push(...chunkResults)
     }
   }

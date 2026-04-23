@@ -34,12 +34,16 @@ pnpm dev
 ## API
 
 ```
-GET/POST   /api/v1/documents          # List / Create
-GET/PUT/DEL /api/v1/documents/:slug   # Read / Update / Delete
-GET        /api/v1/search              # Full-text search
-POST       /api/v1/submissions         # Submit external content
-POST       /api/v1/ingest              # Ingest from URL
-POST       /api/mcp                    # MCP JSON-RPC endpoint
+GET/POST    /api/v1/documents          # List / Create
+GET/PUT/DEL /api/v1/documents/:slug    # Read / Update / Delete
+GET         /api/v1/search             # Full-text search
+POST        /api/v1/submissions        # Submit external content
+POST        /api/v1/ingest             # Ingest from URL
+POST        /api/mcp                   # MCP JSON-RPC endpoint
+GET         /api/docs                  # OpenAPI schema
+GET         /api/health                # Health check
+GET         /api/version               # Runtime/version metadata
+GET         /api/capabilities          # Discoverability capability contract
 ```
 
 See [API.md](API.md) for full reference.
@@ -52,6 +56,17 @@ See [API.md](API.md) for full reference.
 - [CHANGELOG.md](CHANGELOG.md) — Version history
 - [SECURITY.md](SECURITY.md) — Security policy
 - [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) — Community guidelines
+- [docs/ops/minimum-discoverability-matrix.md](docs/ops/minimum-discoverability-matrix.md) — Required discovery surfaces and MCP contract
+
+## Ops Bootstrap
+
+Create kanban tasks, provision a v0 project, and register this service to MCP/network graph:
+
+```bash
+pnpm ops:provision
+```
+
+Artifacts are written to `docs/ops/*.json`.
 
 ## License
 
