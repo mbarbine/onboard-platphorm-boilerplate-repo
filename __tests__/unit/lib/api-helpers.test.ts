@@ -12,14 +12,10 @@ vi.mock('@/lib/db', () => ({
   DEFAULT_TENANT_ID: '00000000-0000-0000-0000-000000000001',
 }))
 
-vi.mock('@/lib/site-config', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/lib/site-config')>()
-  return {
-    ...actual,
-    API_KEY_PREFIX: 'ob_',
-    SERVICE_NAME: 'onboard', // Need to mock this for logger.ts
-  }
-})
+vi.mock('@/lib/site-config', () => ({
+  API_KEY_PREFIX: "ob_",
+  SERVICE_NAME: "test-service"
+}))
 
 describe('getPaginationParams', () => {
   it('returns default values', () => {
