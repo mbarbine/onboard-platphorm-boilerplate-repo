@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const { workflow, input = {}, async = false } = body
 
     // Generate job ID
-    const jobId = `wf_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
+    const jobId = `wf_${Date.now()}_${crypto.randomUUID().split('-')[0]}`
 
     const job: WorkflowJob = {
       id: jobId,
