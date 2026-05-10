@@ -4,15 +4,8 @@ import {
   generateSlug,
   hasScope,
   generateApiKey,
-  apiError,
+  apiResponse,
 } from '@/lib/api-helpers'
-
-// Mock next/server for NextResponse testing
-vi.mock('next/server', () => ({
-  NextResponse: {
-    json: vi.fn((body, init) => ({ body, init }))
-  }
-}))
 
 // Mock modules that depend on runtime
 vi.mock('@/lib/db', () => ({
@@ -171,30 +164,38 @@ describe('generateApiKey', () => {
   })
 })
 
-describe('apiError', () => {
-  it('returns a well-structured error response with default status 400', () => {
-    const result = apiError('INVALID_INPUT', 'The input provided is invalid.') as any;
+describe('apiResponse', () => {
+  it('returns a basic response with just data', async () => {
+    const data = { id: 1, name: 'Test' }
+    const response = apiResponse(data)
 
-    expect(result.init?.status).toBe(400);
-    expect(result.body?.success).toBe(false);
-    expect(result.body?.error?.code).toBe('INVALID_INPUT');
-    expect(result.body?.error?.message).toBe('The input provided is invalid.');
-    expect(result.body?.error?.details).toBeUndefined();
-    expect(result.body?.meta?.request_id).toBeDefined();
-    expect(typeof result.body?.meta?.request_id).toBe('string');
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.success).toBe(true)
+    expect(body.data).toEqual(data)
+    expect(typeof body.meta.request_id).toBe('string')
   })
 
-  it('returns a response with a custom status code', () => {
-    const result = apiError('NOT_FOUND', 'Resource not found', 404) as any;
+  it('returns a response with custom metadata', async () => {
+    const data = { id: 1, name: 'Test' }
+    const meta = { pagination: { total: 10, page: 1 } }
+    const response = apiResponse(data, meta)
 
-    expect(result.init?.status).toBe(404);
-    expect(result.body?.error?.code).toBe('NOT_FOUND');
+    expect(response.status).toBe(200)
+    const body = await response.json()
+    expect(body.success).toBe(true)
+    expect(body.data).toEqual(data)
+    expect(body.meta.pagination).toEqual(meta.pagination)
+    expect(typeof body.meta.request_id).toBe('string')
   })
 
-  it('includes the provided details object', () => {
-    const details = { field: 'email', reason: 'already exists' };
-    const result = apiError('CONFLICT', 'Conflict', 409, details) as any;
+  it('returns a response with custom status code', async () => {
+    const data = { id: 1, name: 'Test' }
+    const response = apiResponse(data, undefined, 201)
 
-    expect(result.body?.error?.details).toEqual(details);
+    expect(response.status).toBe(201)
+    const body = await response.json()
+    expect(body.success).toBe(true)
+    expect(body.data).toEqual(data)
   })
 })
