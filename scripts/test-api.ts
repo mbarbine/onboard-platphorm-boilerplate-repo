@@ -4,9 +4,7 @@
  * Run with: npx tsx scripts/test-api.ts
  */
 
-export {}
-
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000'
+import { BASE_URL } from '../lib/site-config'
 
 interface TestResult {
   name: string
@@ -34,48 +32,38 @@ async function runTest(name: string, fn: () => Promise<void>) {
   }
 }
 
-
-async function fetchJson(path: string, options?: RequestInit) {
-  const url = path.startsWith('http') ? path : `${BASE_URL}${path}`;
-  const res = await fetch(url, options);
-  if (!res.ok) throw new Error(`Status: ${res.status}`);
-  return await res.json();
-}
-
-async function fetchApi(path: string, options?: RequestInit) {
-  const data = await fetchJson(path, options);
-  if (data.success !== undefined && !data.success) throw new Error('Response not successful: ' + JSON.stringify(data, null, 2));
-  return data;
-}
-
-async function fetchText(path: string) {
-  const url = path.startsWith('http') ? path : `${BASE_URL}${path}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Status: ${res.status}`);
-  return await res.text();
-}
-
 async function testHealthEndpoint() {
-  const data = await fetchJson('/api/health')
+  const res = await fetch(`${BASE_URL}/api/health`)
+  if (!res.ok) throw new Error(`Status: ${res.status}`)
+  const data = await res.json()
   if (data.status !== 'healthy') throw new Error('Health check failed: ' + JSON.stringify(data, null, 2))
   if (!data.version) throw new Error('Missing version: ' + JSON.stringify(data, null, 2))
   if (!data.database) throw new Error('Missing database status: ' + JSON.stringify(data, null, 2))
 }
 
 async function testListDocuments() {
-  const data = await fetchApi('/api/v1/documents')
+  const res = await fetch(`${BASE_URL}/api/v1/documents`)
+  if (!res.ok) throw new Error(`Status: ${res.status}`)
+  const data = await res.json()
+  if (!data.success) throw new Error('Response not successful: ' + JSON.stringify(data, null, 2))
   if (!Array.isArray(data.data)) throw new Error('Data is not an array: ' + JSON.stringify(data, null, 2))
   if (!data.meta || typeof data.meta.total !== 'number') throw new Error('Missing meta.total: ' + JSON.stringify(data, null, 2))
 }
 
 async function testListDocumentsWithPagination() {
-  const data = await fetchApi('/api/v1/documents?page=1&per_page=5')
+  const res = await fetch(`${BASE_URL}/api/v1/documents?page=1&per_page=5`)
+  if (!res.ok) throw new Error(`Status: ${res.status}`)
+  const data = await res.json()
+  if (!data.success) throw new Error('Response not successful: ' + JSON.stringify(data, null, 2))
   if (data.data.length > 5) throw new Error('Pagination limit not respected: ' + JSON.stringify(data, null, 2))
   if (data.meta.per_page !== 5) throw new Error('per_page meta incorrect: ' + JSON.stringify(data, null, 2))
 }
 
 async function testListDocumentsWithStatus() {
-  const data = await fetchApi('/api/v1/documents?status=published')
+  const res = await fetch(`${BASE_URL}/api/v1/documents?status=published`)
+  if (!res.ok) throw new Error(`Status: ${res.status}`)
+  const data = await res.json()
+  if (!data.success) throw new Error('Response not successful: ' + JSON.stringify(data, null, 2))
   for (const doc of data.data) {
     if (doc.status !== 'published') throw new Error('Status filter not working: ' + JSON.stringify(data, null, 2))
   }
@@ -83,11 +71,15 @@ async function testListDocumentsWithStatus() {
 
 async function testGetDocumentBySlug() {
   // First get a document slug
-  const listData = await fetchJson('/api/v1/documents?per_page=1')
+  const listRes = await fetch(`${BASE_URL}/api/v1/documents?per_page=1`)
+  const listData = await listRes.json()
   if (!listData.data?.[0]?.slug) throw new Error('No documents to test: ' + JSON.stringify(listData, null, 2))
   
   const slug = listData.data[0].slug
-  const data = await fetchApi(`/api/v1/documents/${slug}`)
+  const res = await fetch(`${BASE_URL}/api/v1/documents/${slug}`)
+  if (!res.ok) throw new Error(`Status: ${res.status}`)
+  const data = await res.json()
+  if (!data.success) throw new Error('Response not successful: ' + JSON.stringify(data, null, 2))
   if (data.data.slug !== slug) throw new Error('Slug mismatch: ' + JSON.stringify(data, null, 2))
   if (!data.data.content) throw new Error('Missing content: ' + JSON.stringify(data, null, 2))
 }
@@ -100,17 +92,23 @@ async function testGetNonExistentDocument() {
 }
 
 async function testListCategories() {
-  const data = await fetchApi('/api/v1/categories')
+  const res = await fetch(`${BASE_URL}/api/v1/categories`)
+  if (!res.ok) throw new Error(`Status: ${res.status}`)
+  const data = await res.json()
+  if (!data.success) throw new Error('Response not successful: ' + JSON.stringify(data, null, 2))
   if (!Array.isArray(data.data)) throw new Error('Data is not an array: ' + JSON.stringify(data, null, 2))
 }
 
 async function testSearchDocuments() {
-  const data = await fetchApi('/api/v1/search?q=introduction')
+  const res = await fetch(`${BASE_URL}/api/v1/search?q=introduction`)
+  if (!res.ok) throw new Error(`Status: ${res.status}`)
+  const data = await res.json()
+  if (!data.success) throw new Error('Response not successful: ' + JSON.stringify(data, null, 2))
   if (!Array.isArray(data.data)) throw new Error('Data is not an array: ' + JSON.stringify(data, null, 2))
 }
 
 async function testCreateSubmission() {
-  const data = await fetchApi('/api/v1/submissions', {
+  const res = await fetch(`${BASE_URL}/api/v1/submissions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -121,18 +119,23 @@ async function testCreateSubmission() {
       author_email: 'test@example.com'
     })
   })
+  if (!res.ok && res.status !== 201) throw new Error(`Status: ${res.status}`)
+  const data = await res.json()
+  if (!data.success) throw new Error('Response not successful: ' + JSON.stringify(data, null, 2))
   if (!data.data.id) throw new Error('Missing submission ID: ' + JSON.stringify(data, null, 2))
   if (data.data.status !== 'pending') throw new Error('Status should be pending: ' + JSON.stringify(data, null, 2))
 }
 
 async function testIngestEndpointInfo() {
-  const data = await fetchJson('/api/v1/ingest')
+  const res = await fetch(`${BASE_URL}/api/v1/ingest`)
+  if (!res.ok) throw new Error(`Status: ${res.status}`)
+  const data = await res.json()
   if (!data.endpoint) throw new Error('Missing endpoint info: ' + JSON.stringify(data, null, 2))
   if (!data.body?.url) throw new Error('Missing URL parameter info: ' + JSON.stringify(data, null, 2))
 }
 
 async function testMCPToolsList() {
-  const data = await fetchJson('/api/mcp', {
+  const res = await fetch(`${BASE_URL}/api/mcp`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -141,6 +144,8 @@ async function testMCPToolsList() {
       method: 'tools/list'
     })
   })
+  if (!res.ok) throw new Error(`Status: ${res.status}`)
+  const data = await res.json()
   if (data.error) throw new Error(data.error.message + ': ' + JSON.stringify(data, null, 2))
   if (!data.result?.tools) throw new Error('Missing tools list: ' + JSON.stringify(data, null, 2))
   if (!Array.isArray(data.result.tools)) throw new Error('Tools is not an array: ' + JSON.stringify(data, null, 2))
@@ -153,7 +158,7 @@ async function testMCPToolsList() {
 }
 
 async function testMCPListDocuments() {
-  const data = await fetchJson('/api/mcp', {
+  const res = await fetch(`${BASE_URL}/api/mcp`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -166,12 +171,14 @@ async function testMCPListDocuments() {
       }
     })
   })
+  if (!res.ok) throw new Error(`Status: ${res.status}`)
+  const data = await res.json()
   if (data.error) throw new Error(data.error.message + ': ' + JSON.stringify(data, null, 2))
   if (!data.result?.content) throw new Error('Missing content: ' + JSON.stringify(data, null, 2))
 }
 
 async function testMCPResourcesList() {
-  const data = await fetchJson('/api/mcp', {
+  const res = await fetch(`${BASE_URL}/api/mcp`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -180,49 +187,65 @@ async function testMCPResourcesList() {
       method: 'resources/list'
     })
   })
+  if (!res.ok) throw new Error(`Status: ${res.status}`)
+  const data = await res.json()
   if (data.error) throw new Error(data.error.message + ': ' + JSON.stringify(data, null, 2))
   if (!data.result?.resources) throw new Error('Missing resources list: ' + JSON.stringify(data, null, 2))
 }
 
 async function testLLMSTxt() {
-  const text = await fetchText('/llms.txt')
+  const res = await fetch(`${BASE_URL}/llms.txt`)
+  if (!res.ok) throw new Error(`Status: ${res.status}`)
+  const text = await res.text()
   if (!text.includes('Onboard')) throw new Error('Missing site identifier: ' + text.slice(0, 100))
   if (!text.includes('/api/v1')) throw new Error('Missing API reference: ' + text.slice(0, 100))
 }
 
 async function testLLMSFullTxt() {
-  const text = await fetchText('/llms-full.txt')
+  const res = await fetch(`${BASE_URL}/llms-full.txt`)
+  if (!res.ok) throw new Error(`Status: ${res.status}`)
+  const text = await res.text()
   if (!text.includes('Onboard')) throw new Error('Missing site identifier: ' + text.slice(0, 100))
   if (text.length < 500) throw new Error('Content too short: ' + text.slice(0, 100))
 }
 
 async function testLLMSIndexJson() {
-  const data = await fetchJson('/llms-index.json')
+  const res = await fetch(`${BASE_URL}/llms-index.json`)
+  if (!res.ok) throw new Error(`Status: ${res.status}`)
+  const data = await res.json()
   if (!data.name) throw new Error('Missing name: ' + JSON.stringify(data, null, 2))
   if (!data.api) throw new Error('Missing API info: ' + JSON.stringify(data, null, 2))
   if (!data.mcp) throw new Error('Missing MCP info: ' + JSON.stringify(data, null, 2))
 }
 
 async function testSitemapXml() {
-  const text = await fetchText('/sitemap.xml')
+  const res = await fetch(`${BASE_URL}/sitemap.xml`)
+  if (!res.ok) throw new Error(`Status: ${res.status}`)
+  const text = await res.text()
   if (!text.includes('<?xml')) throw new Error('Invalid XML: ' + text.slice(0, 100))
   if (!text.includes('<urlset')) throw new Error('Missing urlset: ' + text.slice(0, 100))
 }
 
 async function testRssFeed() {
-  const text = await fetchText('/rss.xml')
+  const res = await fetch(`${BASE_URL}/rss.xml`)
+  if (!res.ok) throw new Error(`Status: ${res.status}`)
+  const text = await res.text()
   if (!text.includes('<?xml')) throw new Error('Invalid XML: ' + text.slice(0, 100))
   if (!text.includes('<rss') && !text.includes('<feed')) throw new Error('Missing RSS/Atom feed: ' + text.slice(0, 100))
 }
 
 async function testRobotsTxt() {
-  const text = await fetchText('/robots.txt')
+  const res = await fetch(`${BASE_URL}/robots.txt`)
+  if (!res.ok) throw new Error(`Status: ${res.status}`)
+  const text = await res.text()
   if (!text.includes('User-agent')) throw new Error('Missing User-agent: ' + text.slice(0, 100))
   if (!text.includes('Sitemap')) throw new Error('Missing Sitemap: ' + text.slice(0, 100))
 }
 
 async function testAPIDocsEndpoint() {
-  const data = await fetchJson('/api/docs')
+  const res = await fetch(`${BASE_URL}/api/docs`)
+  if (!res.ok) throw new Error(`Status: ${res.status}`)
+  const data = await res.json()
   if (!data.openapi) throw new Error('Missing OpenAPI version: ' + JSON.stringify(data, null, 2))
   if (!data.paths) throw new Error('Missing paths: ' + JSON.stringify(data, null, 2))
 }
