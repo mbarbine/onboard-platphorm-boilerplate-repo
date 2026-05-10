@@ -122,9 +122,9 @@ export async function PUT(request: NextRequest) {
         await sql`
           INSERT INTO settings (tenant_id, key, value, updated_at)
           SELECT ${DEFAULT_TENANT}, u.key, u.value, NOW()
-          FROM UNNEST(${keys}::text[], ${values}::text[]) AS u(key, value)
+          FROM UNNEST(${keys}::text[], ${values}::jsonb[]) AS u(key, value)
           ON CONFLICT (tenant_id, key) 
-          DO UPDATE SET value = EXCLUDED.value, updated_at = EXCLUDED.updated_at
+          DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
         `
       }
     }
