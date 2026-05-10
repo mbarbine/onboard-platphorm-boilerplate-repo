@@ -123,6 +123,7 @@ export async function POST(
     }
 
     const category = body.category || submission.source_identifier
+    const publishImmediately = body.publish_immediately !== false
 
     const result = await sql`
       INSERT INTO documents (
@@ -143,8 +144,8 @@ export async function POST(
         ${category},
         ${JSON.stringify(body.tags || [])},
         ${JSON.stringify({ ...submission.metadata, submission_id: submission.id })},
-        ${body.publish_immediately ? 'published' : 'draft'},
-        ${body.publish_immediately ? new Date().toISOString() : null}
+        ${publishImmediately ? 'published' : 'draft'},
+        ${publishImmediately ? new Date().toISOString() : null}
       )
       RETURNING *
     ` as Document[]

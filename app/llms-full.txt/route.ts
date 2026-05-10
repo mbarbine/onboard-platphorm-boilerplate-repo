@@ -52,6 +52,16 @@ Categories: ${categories.length}
 ### Base URL
 ${baseUrl}
 
+### First-Class Discoverability Endpoints
+- ${baseUrl}/api/docs
+- ${baseUrl}/api/health
+- ${baseUrl}/api/version
+- ${baseUrl}/api/capabilities
+- ${baseUrl}/llms.txt
+- ${baseUrl}/llms-full.txt
+- ${baseUrl}/robots.txt
+- ${baseUrl}/sitemap.xml
+
 ### MCP Endpoint
 POST ${baseUrl}/api/mcp
 
@@ -151,6 +161,30 @@ Read operations are public.
 Endpoint: POST ${baseUrl}/api/mcp
 Protocol: JSON-RPC 2.0
 
+### MCP Capability Contract
+
+\`\`\`json
+{
+  "service": "platphorm-mcp",
+  "role": "mcp_global",
+  "version": "0.1.0",
+  "supports": {
+    "docs": true,
+    "mcp": true,
+    "sse": true,
+    "callbacks": true,
+    "auth": false
+  },
+  "mcp": {
+    "endpoint": "/api/mcp",
+    "protocol_versions": ["2025-11-25"],
+    "tools": true,
+    "resources": true,
+    "prompts": true
+  }
+}
+\`\`\`
+
 #### Available Tools
 - list_documents - List and filter documents
 - get_document - Get document by slug
@@ -221,6 +255,7 @@ curl -X POST ${baseUrl}/api/mcp \\
 
 This platform integrates with the Platphorm News ecosystem:
 - MCP Hub: https://mcp.platphormnews.com
+- Trace: https://trace.platphormnews.com
 - Emoji API: https://emoji.platphormnews.com
 - SVG API: https://svg.platphormnews.com
 - JSON API: https://json.platphormnews.com

@@ -7,6 +7,18 @@ Production: https://onboard.platphormnews.com/api
 Development: http://localhost:3000/api
 ```
 
+## Discoverability Endpoints (Required)
+
+- `/api/docs`
+- `/api/health`
+- `/api/version`
+- `/api/capabilities`
+- `/llms.txt`
+- `/llms-full.txt`
+- `/robots.txt`
+- `/sitemap.xml`
+- `/api/mcp` (MCP-capable contract endpoint)
+
 ## Authentication
 
 Most read operations are public. Write operations require an API key.
@@ -23,6 +35,34 @@ Create the first API key (only works once):
 curl -X PUT https://onboard.platphormnews.com/api/v1/keys \
   -H "Content-Type: application/json" \
   -d '{"name": "Admin Key"}'
+```
+
+---
+
+## Capabilities Contract
+
+`GET /api/capabilities` returns:
+
+```json
+{
+  "service": "platphorm-mcp",
+  "role": "mcp_global",
+  "version": "0.1.0",
+  "supports": {
+    "docs": true,
+    "mcp": true,
+    "sse": true,
+    "callbacks": true,
+    "auth": false
+  },
+  "mcp": {
+    "endpoint": "/api/mcp",
+    "protocol_versions": ["2025-11-25"],
+    "tools": true,
+    "resources": true,
+    "prompts": true
+  }
+}
 ```
 
 ---

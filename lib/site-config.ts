@@ -97,12 +97,21 @@ export const SESSION_SALT = process.env.SESSION_SALT
 export const ECOSYSTEM = {
   emoji: process.env.EMOJI_API_URL || '',
   mcp: process.env.MCP_HUB_URL || '',
+  trace: process.env.TRACE_API_URL || '',
   svg: process.env.SVG_API_URL || '',
   json: process.env.JSON_API_URL || '',
   xml: process.env.XML_API_URL || '',
   calendar: process.env.CALENDAR_API_URL || '',
   kanban: process.env.KANBAN_API_URL || '',
 } as const
+
+/** External registration endpoint for service discovery graph */
+export const NETWORK_GRAPH_URL =
+  process.env.NETWORK_GRAPH_URL || 'https://platphormnes.com/api/network/graph'
+
+/** MCP registry endpoint used for registration handshakes */
+export const MCP_REGISTRY_URL =
+  process.env.MCP_REGISTRY_URL || 'https://mcp.platphormnews.com/api/mcp/register'
 
 // ── SEO Keywords ─────────────────────────────────────────────────────────────
 

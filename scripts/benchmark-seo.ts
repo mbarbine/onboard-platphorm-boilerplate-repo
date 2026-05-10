@@ -4,6 +4,8 @@
  * Run with: npx tsx scripts/benchmark-seo.ts
  */
 
+export {};
+
 // Mock DB
 const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000001';
 let queryCount = 0;

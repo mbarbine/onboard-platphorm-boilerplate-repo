@@ -1,0 +1,32 @@
+[
+  {
+    "title": "Investigate onboarding publish regression",
+    "status": 201,
+    "id": "83f0e8a9-6864-4b71-b78a-f077b994cf46"
+  },
+  {
+    "title": "Add approval default publish behavior",
+    "status": 201,
+    "id": "233cc5f3-7e34-442c-bc1c-1892154b3c54"
+  },
+  {
+    "title": "Add regression tests for submission approval publish default",
+    "status": 201,
+    "id": "fd50bff2-fdad-4923-bd24-70037ac3647d"
+  },
+  {
+    "title": "Backfill existing draft onboarding docs by source_identifier",
+    "status": 201,
+    "id": "80a8acec-c6af-4555-8205-01b8c9a9d85a"
+  },
+  {
+    "title": "Verify automation route integrity and dedupe imports",
+    "status": 201,
+    "id": "f4c711f5-0c8e-4523-9e02-3e1267b8a1f5"
+  },
+  {
+    "title": "Update deployment checklist for kanban+v0 provisioning",
+    "status": 201,
+    "id": "e73f75f8-ecfd-4fd9-a060-92581dbb93e9"
+  }
+]

@@ -172,9 +172,49 @@ curl -X PUT ${baseUrl}/api/v1/keys -d '{"name":"Admin"}'
 - [API Docs](${baseUrl}/docs/api) - Interactive reference
 - [MCP Guide](${baseUrl}/docs/mcp) - MCP integration
 
+## Minimum Discoverability Matrix
+
+### First-Class Internal Services (Required)
+- ${baseUrl}/api/docs
+- ${baseUrl}/api/health
+- ${baseUrl}/api/version
+- ${baseUrl}/api/capabilities
+- ${baseUrl}/llms.txt
+- ${baseUrl}/llms-full.txt
+- ${baseUrl}/robots.txt
+- ${baseUrl}/sitemap.xml
+
+### MCP-Capable Internal Services (Required)
+- ${baseUrl}/api/mcp
+
+Capability contract:
+\`\`\`json
+{
+  "service": "platphorm-mcp",
+  "role": "mcp_global",
+  "version": "0.1.0",
+  "supports": {
+    "docs": true,
+    "mcp": true,
+    "sse": true,
+    "callbacks": true,
+    "auth": false
+  },
+  "mcp": {
+    "endpoint": "/api/mcp",
+    "protocol_versions": ["2025-11-25"],
+    "tools": true,
+    "resources": true,
+    "prompts": true
+  }
+}
+\`\`\`
+
 ## External Integrations
 
 - Emoji MCP: https://emoji.platphormnews.com/api/mcp
+- MCP Hub: https://mcp.platphormnews.com
+- Trace: https://trace.platphormnews.com
 - Calendar, Kanban integrations available
 
 ---

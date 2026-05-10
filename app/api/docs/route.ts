@@ -16,7 +16,8 @@ export function GET() {
       },
     },
     servers: [
-      { url: `${baseUrl}/api/v1`, description: 'Production' },
+      { url: `${baseUrl}/api/v1`, description: 'REST API v1' },
+      { url: `${baseUrl}/api`, description: 'Service discoverability endpoints' },
     ],
     security: [{ bearerAuth: [] }],
     paths: {
@@ -212,6 +213,37 @@ export function GET() {
           },
         },
       },
+      '/health': {
+        get: {
+          summary: 'Health check',
+          tags: ['Discoverability'],
+          security: [],
+          responses: {
+            200: { description: 'Service is healthy' },
+            503: { description: 'Service is unhealthy' },
+          },
+        },
+      },
+      '/version': {
+        get: {
+          summary: 'Version information',
+          tags: ['Discoverability'],
+          security: [],
+          responses: {
+            200: { description: 'Version and runtime metadata' },
+          },
+        },
+      },
+      '/capabilities': {
+        get: {
+          summary: 'Capability contract and discoverability matrix',
+          tags: ['Discoverability'],
+          security: [],
+          responses: {
+            200: { description: 'MCP and service capabilities' },
+          },
+        },
+      },
     },
     components: {
       securitySchemes: {
@@ -311,6 +343,7 @@ export function GET() {
       { name: 'Categories', description: 'Category management' },
       { name: 'Webhooks', description: 'Webhook management' },
       { name: 'Authentication', description: 'API key management' },
+      { name: 'Discoverability', description: 'Service discovery, capabilities, health, and version' },
     ],
   }
 

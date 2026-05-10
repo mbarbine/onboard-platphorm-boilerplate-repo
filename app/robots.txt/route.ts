@@ -44,6 +44,9 @@ Disallow: /api/
 # Allow discovery endpoints
 Allow: /api/docs
 Allow: /api/health
+Allow: /api/version
+Allow: /api/capabilities
+Allow: /api/mcp
 
 # Allow well-known discovery
 Allow: /.well-known/
