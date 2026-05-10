@@ -15,22 +15,12 @@ const DEFAULTS: Record<string, string> = {
   github_repo: JSON.stringify(GITHUB_REPO),
 }
 
-export function hashPassword(password: string): string {
-  const salt = crypto.randomBytes(16).toString('hex')
-  const hash = crypto.scryptSync(password, salt, 64).toString('hex')
-  return `${salt}:${hash}`
+function hashPassword(password: string): string {
+  return crypto.createHash('sha256').update(password).digest('hex')
 }
 
-export function verifyPassword(password: string, storedHash: string): boolean {
-  if (storedHash.includes(':')) {
-    const [salt, hash] = storedHash.split(':')
-    const verifyHash = crypto.scryptSync(password, salt, 64).toString('hex')
-    return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(verifyHash, 'hex'))
-  }
-
-  // Backward compatibility for legacy SHA-256 hashes
-  const legacyHash = crypto.createHash('sha256').update(password).digest('hex')
-  return crypto.timingSafeEqual(Buffer.from(storedHash, 'hex'), Buffer.from(legacyHash, 'hex'))
+function verifyPassword(password: string, hash: string): boolean {
+  return hashPassword(password) === hash
 }
 
 export async function GET() {
@@ -119,19 +109,20 @@ export async function PUT(request: NextRequest) {
     
     // Update settings
     if (settings) {
-      const settingsEntries = Object.entries(settings).filter(([key]) => key !== 'password_is_set')
-      if (settingsEntries.length > 0) {
+      const keys: string[] = []
+      const values: string[] = []
+
+      for (const [key, value] of Object.entries(settings)) {
+        if (key === 'password_is_set') continue
+        keys.push(key)
+        values.push(JSON.stringify(value))
+      }
+
+      if (keys.length > 0) {
         await sql`
           INSERT INTO settings (tenant_id, key, value, updated_at)
-          SELECT
-            ${DEFAULT_TENANT},
-            u.key,
-            u.value,
-            NOW()
-          FROM UNNEST(
-            ${settingsEntries.map(([key]) => key)}::text[],
-            ${settingsEntries.map(([, value]) => JSON.stringify(value))}::text[]
-          ) AS u(key, value)
+          SELECT ${DEFAULT_TENANT}, u.key, u.value, NOW()
+          FROM UNNEST(${keys}::text[], ${values}::jsonb[]) AS u(key, value)
           ON CONFLICT (tenant_id, key) 
           DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
         `
@@ -150,26 +141,19 @@ export async function PUT(request: NextRequest) {
     }
     
     // Update integrations
-    if (integrations && Array.isArray(integrations) && integrations.length > 0) {
-      await sql`
-        UPDATE integrations AS i
-        SET
-          base_url = u.base_url,
-          api_path = u.api_path,
-          mcp_path = u.mcp_path,
-          enabled = u.enabled,
-          settings = u.settings,
-          updated_at = NOW()
-        FROM UNNEST(
-          ${integrations.map(i => i.id)}::uuid[],
-          ${integrations.map(i => i.base_url)}::text[],
-          ${integrations.map(i => i.api_path || '/api')}::text[],
-          ${integrations.map(i => i.mcp_path || '/api/mcp')}::text[],
-          ${integrations.map(i => !!i.enabled)}::boolean[],
-          ${integrations.map(i => JSON.stringify(i.settings || {}))}::jsonb[]
-        ) AS u(id, base_url, api_path, mcp_path, enabled, settings)
-        WHERE i.id = u.id AND i.tenant_id = ${DEFAULT_TENANT}
-      `
+    if (integrations && Array.isArray(integrations)) {
+      for (const integration of integrations) {
+        await sql`
+          UPDATE integrations 
+          SET base_url = ${integration.base_url},
+              api_path = ${integration.api_path || '/api'},
+              mcp_path = ${integration.mcp_path || '/api/mcp'},
+              enabled = ${integration.enabled},
+              settings = ${JSON.stringify(integration.settings || {})},
+              updated_at = NOW()
+          WHERE id = ${integration.id} AND tenant_id = ${DEFAULT_TENANT}
+        `
+      }
     }
     
     return NextResponse.json({

@@ -4,9 +4,7 @@
  * Run with: npx tsx scripts/test-api.ts
  */
 
-import { logger } from '@/lib/logger'
-
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000'
+import { BASE_URL } from '../lib/site-config'
 
 interface TestResult {
   name: string

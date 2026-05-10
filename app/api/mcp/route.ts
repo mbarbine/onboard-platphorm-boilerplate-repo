@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js'
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
 import { z } from 'zod'
 import { sql, DEFAULT_TENANT_ID } from '@/lib/db'
@@ -76,12 +77,12 @@ const BLOCKED_HOST_PATTERNS = [
 function assertExternalUrl(raw: string): URL {
   const parsed = new URL(raw)
   if (!['http:', 'https:'].includes(parsed.protocol)) {
-    throw new Error('Only HTTP and HTTPS URLs are allowed')
+    throw new McpError(ErrorCode.InvalidRequest, 'Only HTTP and HTTPS URLs are allowed')
   }
   // Strip IPv6 brackets (new URL('http://[::1]').hostname → '[::1]')
   const hostname = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '')
   if (BLOCKED_HOST_PATTERNS.some(p => p.test(hostname))) {
-    throw new Error('URLs pointing to internal or private networks are not allowed')
+    throw new McpError(ErrorCode.InvalidRequest, 'URLs pointing to internal or private networks are not allowed')
   }
   return parsed
 }
@@ -194,7 +195,7 @@ export function createMcpServer(): McpServer {
         SELECT * FROM documents
         WHERE tenant_id = ${DEFAULT_TENANT_ID} AND slug = ${slug} AND deleted_at IS NULL
       ` as Document[]
-      if (docs.length === 0) throw new Error(`Document not found: ${slug}`)
+      if (docs.length === 0) throw new McpError(ErrorCode.InvalidRequest, `Document not found: ${slug}`)
       const doc = docs[0]
 
       if (format === 'toc') return ok({ toc: extractTableOfContents(doc.content) })
@@ -278,7 +279,7 @@ export function createMcpServer(): McpServer {
     async ({ slug, title, content, description, category, tags, status }) => {
       const baseUrl = await getBaseUrl()
       const existing = await sql`SELECT id FROM documents WHERE slug = ${slug} AND tenant_id = ${DEFAULT_TENANT_ID}`
-      if (existing.length === 0) throw new Error(`Document not found: ${slug}`)
+      if (existing.length === 0) throw new McpError(ErrorCode.InvalidRequest, `Document not found: ${slug}`)
       await sql`
         UPDATE documents SET
           title = COALESCE(${title || null}, title),
@@ -383,7 +384,7 @@ export function createMcpServer(): McpServer {
       const baseUrl = await getBaseUrl()
       const limit = Math.min(rawLimit ?? 5, 20)
       const source = await sql`SELECT category, tags FROM documents WHERE slug = ${slug} AND tenant_id = ${DEFAULT_TENANT_ID}`
-      if (source.length === 0) throw new Error(`Document not found: ${slug}`)
+      if (source.length === 0) throw new McpError(ErrorCode.InvalidRequest, `Document not found: ${slug}`)
       const docs = await sql`
         SELECT slug, title, description, category, emoji_summary, reading_time_minutes
         FROM documents
@@ -481,9 +482,9 @@ export function createMcpServer(): McpServer {
         },
         redirect: 'follow',
       })
-      if (!response.ok) throw new Error(`Failed to fetch URL: ${response.status}`)
+      if (!response.ok) throw new McpError(ErrorCode.InvalidRequest, `Failed to fetch URL: ${response.status}`)
       const html = await response.text()
-      if (new TextEncoder().encode(html).byteLength > MAX_CONTENT_BYTES) throw new Error('Content exceeds maximum size (5 MB)')
+      if (new TextEncoder().encode(html).byteLength > MAX_CONTENT_BYTES) throw new McpError(ErrorCode.InvalidRequest, 'Content exceeds maximum size (5 MB)')
       const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i) || html.match(/<h1[^>]*>([^<]+)<\/h1>/i)
       const title = titleMatch ? titleMatch[1].trim() : new URL(url).pathname.split('/').pop() || 'Untitled'
       const descMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i)
@@ -650,9 +651,9 @@ export function createMcpServer(): McpServer {
       const searchIndexData: { id: string; content: string }[] = []
 
       for (const p of preparedDocs) {
-        const docId = insertedMap.get(p.slug)
+        const docId = insertedMap.get(p.slug) as string | undefined
         if (docId) {
-          searchIndexData.push({ id: String(docId), content: p.doc.title + ' ' + p.doc.content })
+          searchIndexData.push({ id: docId as string, content: p.doc.title + ' ' + p.doc.content })
           results.push({ slug: p.slug, status: 'created' })
         } else {
           results.push({ slug: p.slug, status: 'skipped (exists)' })
@@ -725,7 +726,7 @@ export function createMcpServer(): McpServer {
         FROM documents
         WHERE tenant_id = ${DEFAULT_TENANT_ID} AND slug = ${slug} AND deleted_at IS NULL
       ` as Document[]
-      if (docs.length === 0) throw new Error(`Document not found: ${slug}`)
+      if (docs.length === 0) throw new McpError(ErrorCode.InvalidRequest, `Document not found: ${slug}`)
       const doc = docs[0]
       const opt = await generateFullOptimization({
         title: doc.title,
@@ -799,29 +800,22 @@ export function createMcpServer(): McpServer {
           AND events @> ${JSON.stringify([event])}::jsonb
       `
       const payload = { event, timestamp: new Date().toISOString(), data: slug ? { slug } : {} }
-      const results: { webhook_id: string; status?: number; error?: string }[] = []
-
-      const CHUNK_SIZE = 10
-      for (let i = 0; i < webhooks.length; i += CHUNK_SIZE) {
-        const chunk = webhooks.slice(i, i + CHUNK_SIZE)
-        const chunkResults = await Promise.all(
-          chunk.map(async (wh) => {
-            try {
-              assertExternalUrl(wh.url as string)
-              const signature = crypto.createHmac('sha256', wh.secret as string).update(JSON.stringify(payload)).digest('hex')
-              const resp = await fetchWithTimeout(wh.url as string, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Webhook-Signature': signature },
-                body: JSON.stringify(payload),
-              }, 10_000)
-              return { webhook_id: wh.id as string, status: resp.status }
-            } catch (err) {
-              return { webhook_id: wh.id as string, error: (err as Error).message }
-            }
-          })
-        )
-        results.push(...chunkResults)
-      }
+      const results = await Promise.all(
+        webhooks.map(async (wh) => {
+          try {
+            assertExternalUrl(wh.url as string)
+            const signature = crypto.createHmac('sha256', wh.secret as string).update(JSON.stringify(payload)).digest('hex')
+            const resp = await fetchWithTimeout(wh.url as string, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-Webhook-Signature': signature },
+              body: JSON.stringify(payload),
+            }, 10_000)
+            return { webhook_id: wh.id, status: resp.status }
+          } catch (err) {
+            return { webhook_id: wh.id, error: (err as Error).message }
+          }
+        })
+      )
       return ok({ event, triggered: webhooks.length, results })
     },
   )
@@ -852,7 +846,7 @@ export function createMcpServer(): McpServer {
         SELECT base_url, mcp_path FROM integrations
         WHERE tenant_id = ${DEFAULT_TENANT_ID} AND name = ${integration} AND enabled = true
       `
-      if (rows.length === 0) throw new Error(`Integration not found or disabled: ${integration}`)
+      if (rows.length === 0) throw new McpError(ErrorCode.InvalidRequest, `Integration not found or disabled: ${integration}`)
       const mcpUrl = `${rows[0].base_url}${rows[0].mcp_path}`
       assertExternalUrl(mcpUrl)
       const resp = await fetchWithTimeout(mcpUrl, {
@@ -860,7 +854,7 @@ export function createMcpServer(): McpServer {
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
       })
-      if (!resp.ok) throw new Error(`Integration request failed: ${resp.status}`)
+      if (!resp.ok) throw new McpError(ErrorCode.InvalidRequest, `Integration request failed: ${resp.status}`)
       return ok({ integration, response: await resp.json() })
     },
   )
@@ -884,17 +878,17 @@ export function createMcpServer(): McpServer {
     async ({ slug }) => {
       const baseUrl = await getBaseUrl()
       const docs = await sql`SELECT title, description FROM documents WHERE slug = ${slug} AND tenant_id = ${DEFAULT_TENANT_ID}`
-      if (docs.length === 0) throw new Error(`Document not found: ${slug}`)
+      if (docs.length === 0) throw new McpError(ErrorCode.InvalidRequest, `Document not found: ${slug}`)
       const doc = docs[0]
       const url = `${baseUrl}/docs/${slug}`
       return ok({
         slug, url, links: [
-          { platform: 'twitter',    url: `https://twitter.com/intent/tweet?${new URLSearchParams({ text: doc.title as string, url }).toString()}`, icon: '𝕏'  },
-          { platform: 'linkedin',   url: `https://www.linkedin.com/sharing/share-offsite/?${new URLSearchParams({ url }).toString()}`, icon: '💼' },
-          { platform: 'facebook',   url: `https://www.facebook.com/sharer/sharer.php?${new URLSearchParams({ u: url }).toString()}`, icon: '📘' },
-          { platform: 'reddit',     url: `https://reddit.com/submit?${new URLSearchParams({ url, title: doc.title as string }).toString()}`, icon: '🔴' },
-          { platform: 'hackernews', url: `https://news.ycombinator.com/submitlink?${new URLSearchParams({ u: url, t: doc.title as string }).toString()}`, icon: '🟧' },
-          { platform: 'email',      url: `mailto:?${new URLSearchParams({ subject: doc.title as string, body: `${doc.description as string || ''}\n\n${url}` }).toString().replace(/\+/g, '%20')}`, icon: '📧' },
+          { platform: 'twitter',    url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(doc.title as string)}&url=${encodeURIComponent(url)}`,                              icon: '𝕏'  },
+          { platform: 'linkedin',   url: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,                                                               icon: '💼' },
+          { platform: 'facebook',   url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,                                                                      icon: '📘' },
+          { platform: 'reddit',     url: `https://reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(doc.title as string)}`,                                    icon: '🔴' },
+          { platform: 'hackernews', url: `https://news.ycombinator.com/submitlink?u=${encodeURIComponent(url)}&t=${encodeURIComponent(doc.title as string)}`,                            icon: '🟧' },
+          { platform: 'email',      url: `mailto:?subject=${encodeURIComponent(doc.title as string)}&body=${encodeURIComponent((doc.description as string || '') + '\n\n' + url)}`,      icon: '📧' },
         ],
       })
     },
@@ -932,7 +926,7 @@ export function createMcpServer(): McpServer {
       const baseUrl = await getBaseUrl()
       const s = slug.toLowerCase()
       const entry = PROJECT_DOCS[s]
-      if (!entry) throw new Error(`Project doc not found: "${s}". Available: ${Object.keys(PROJECT_DOCS).join(', ')}`)
+      if (!entry) throw new McpError(ErrorCode.InvalidRequest, `Project doc not found: "${s}". Available: ${Object.keys(PROJECT_DOCS).join(', ')}`)
       const filePath = path.join(process.cwd(), entry.file)
       const content = await fs.readFile(filePath, 'utf-8')
       if (format === 'raw') return ok({ slug: s, file: entry.file, content })
@@ -968,7 +962,7 @@ export function createMcpServer(): McpServer {
         return { contents: [{ uri: uri.href, mimeType: 'application/json', text: JSON.stringify({ docs: entries, total: entries.length, base_url: baseUrl, mcp_endpoint: `${baseUrl}/api/mcp` }, null, 2) }] }
       }
       const entry = PROJECT_DOCS[s]
-      if (!entry) throw new Error(`Unknown project-doc resource: ${uri.href}`)
+      if (!entry) throw new McpError(ErrorCode.InvalidRequest, `Unknown project-doc resource: ${uri.href}`)
       const filePath = path.join(process.cwd(), entry.file)
       const content = await fs.readFile(filePath, 'utf-8')
       return { contents: [{ uri: uri.href, mimeType: 'text/markdown', text: content }] }
@@ -1067,7 +1061,7 @@ export function createMcpServer(): McpServer {
     { slug: z.string() },
     async ({ slug }) => {
       const docs = await sql`SELECT title, content FROM documents WHERE tenant_id = ${DEFAULT_TENANT_ID} AND slug = ${slug} AND deleted_at IS NULL`
-      if (docs.length === 0) throw new Error('Document not found')
+      if (docs.length === 0) throw new McpError(ErrorCode.InvalidRequest, 'Document not found')
       return { messages: [{ role: 'user' as const, content: { type: 'text' as const, text: `Please explain the following documentation page in simple, clear terms:\n\n# ${docs[0].title}\n\n${docs[0].content}` } }] }
     },
   )
@@ -1088,7 +1082,7 @@ export function createMcpServer(): McpServer {
         sql`SELECT title, content FROM documents WHERE slug = ${slug1} AND deleted_at IS NULL`,
         sql`SELECT title, content FROM documents WHERE slug = ${slug2} AND deleted_at IS NULL`,
       ])
-      if (doc1.length === 0 || doc2.length === 0) throw new Error('One or both documents not found')
+      if (doc1.length === 0 || doc2.length === 0) throw new McpError(ErrorCode.InvalidRequest, 'One or both documents not found')
       return { messages: [{ role: 'user' as const, content: { type: 'text' as const, text: `Please compare these two documentation pages:\n\n## ${doc1[0].title}\n${doc1[0].content}\n\n## ${doc2[0].title}\n${doc2[0].content}` } }] }
     },
   )
@@ -1097,7 +1091,7 @@ export function createMcpServer(): McpServer {
     { slug: z.string() },
     async ({ slug }) => {
       const docs = await sql`SELECT title, content FROM documents WHERE slug = ${slug} AND deleted_at IS NULL`
-      if (docs.length === 0) throw new Error('Document not found')
+      if (docs.length === 0) throw new McpError(ErrorCode.InvalidRequest, 'Document not found')
       return { messages: [{ role: 'user' as const, content: { type: 'text' as const, text: `Generate a FAQ (Frequently Asked Questions) section based on this documentation:\n\n# ${docs[0].title}\n\n${docs[0].content}` } }] }
     },
   )
@@ -1106,7 +1100,7 @@ export function createMcpServer(): McpServer {
     { slug: z.string(), language: z.string() },
     async ({ slug, language }) => {
       const docs = await sql`SELECT title, content FROM documents WHERE slug = ${slug} AND deleted_at IS NULL`
-      if (docs.length === 0) throw new Error('Document not found')
+      if (docs.length === 0) throw new McpError(ErrorCode.InvalidRequest, 'Document not found')
       return { messages: [{ role: 'user' as const, content: { type: 'text' as const, text: `Translate this documentation to ${language}:\n\n# ${docs[0].title}\n\n${docs[0].content}` } }] }
     },
   )
@@ -1115,7 +1109,7 @@ export function createMcpServer(): McpServer {
     { slug: z.string() },
     async ({ slug }) => {
       const docs = await sql`SELECT title, description, content, tags FROM documents WHERE slug = ${slug} AND deleted_at IS NULL`
-      if (docs.length === 0) throw new Error('Document not found')
+      if (docs.length === 0) throw new McpError(ErrorCode.InvalidRequest, 'Document not found')
       return { messages: [{ role: 'user' as const, content: { type: 'text' as const, text: `Analyze this documentation and suggest SEO improvements:\n\nTitle: ${docs[0].title}\nDescription: ${docs[0].description || 'None'}\nTags: ${JSON.stringify(docs[0].tags || [])}\n\nContent:\n${docs[0].content}` } }] }
     },
   )
@@ -1160,23 +1154,6 @@ export async function POST(req: Request): Promise<Response> {
 export async function GET(): Promise<NextResponse> {
   const baseUrl = await getBaseUrl()
   return NextResponse.json({
-    service: 'platphorm-mcp',
-    role: 'mcp_global',
-    service_version: '0.1.0',
-    supports: {
-      docs: true,
-      mcp: true,
-      sse: true,
-      callbacks: true,
-      auth: false,
-    },
-    mcp: {
-      endpoint: '/api/mcp',
-      protocol_versions: ['2025-11-25'],
-      tools: true,
-      resources: true,
-      prompts: true,
-    },
     name: `${SERVICE_NAME}-mcp`,
     version: '2.0.0',
     protocol_version: '2024-11-05',
@@ -1201,15 +1178,5 @@ export async function GET(): Promise<NextResponse> {
       'docs://tags', 'docs://stats', 'docs://sitemap', 'docs://llms',
     ],
     prompts: ['explain_doc', 'summarize_category', 'compare_docs', 'generate_faq', 'translate_doc', 'improve_seo'],
-    discoverability: {
-      docs: `${baseUrl}/api/docs`,
-      health: `${baseUrl}/api/health`,
-      version: `${baseUrl}/api/version`,
-      capabilities: `${baseUrl}/api/capabilities`,
-      llms_txt: `${baseUrl}/llms.txt`,
-      llms_full: `${baseUrl}/llms-full.txt`,
-      robots: `${baseUrl}/robots.txt`,
-      sitemap: `${baseUrl}/sitemap.xml`,
-    },
   })
 }

@@ -4,15 +4,8 @@ import {
   generateSlug,
   hasScope,
   generateApiKey,
-  apiError,
+  apiResponse,
 } from '@/lib/api-helpers'
-
-// Mock next/server for NextResponse testing
-vi.mock('next/server', () => ({
-  NextResponse: {
-    json: vi.fn((body, init) => ({ body, init }))
-  }
-}))
 
 // Mock modules that depend on runtime
 vi.mock('@/lib/db', () => ({
@@ -21,9 +14,16 @@ vi.mock('@/lib/db', () => ({
 }))
 
 vi.mock('@/lib/site-config', () => ({
-  API_KEY_PREFIX: 'ob_',
-  SERVICE_NAME: 'onboard',
+  API_KEY_PREFIX: "ob_",
+  SERVICE_NAME: "test-service"
 }))
+
+vi.mock('next/server', () => ({
+  NextResponse: {
+    json: vi.fn((body, init) => ({ body, init }))
+  }
+}))
+
 
 describe('getPaginationParams', () => {
   it('returns default values', () => {
@@ -171,30 +171,38 @@ describe('generateApiKey', () => {
   })
 })
 
-describe('apiError', () => {
-  it('returns a well-structured error response with default status 400', () => {
-    const result = apiError('INVALID_INPUT', 'The input provided is invalid.') as any;
 
-    expect(result.init?.status).toBe(400);
-    expect(result.body?.success).toBe(false);
-    expect(result.body?.error?.code).toBe('INVALID_INPUT');
-    expect(result.body?.error?.message).toBe('The input provided is invalid.');
-    expect(result.body?.error?.details).toBeUndefined();
-    expect(result.body?.meta?.request_id).toBeDefined();
-    expect(typeof result.body?.meta?.request_id).toBe('string');
+describe('apiResponse', () => {
+  it('returns data correctly with default status', () => {
+    const data = { message: 'Hello' }
+    const result = apiResponse(data) as any
+
+    expect(result.init).toEqual({ status: 200 })
+    expect(result.body).toEqual({
+      success: true,
+      data,
+      meta: {
+        request_id: expect.any(String),
+      },
+    })
   })
 
-  it('returns a response with a custom status code', () => {
-    const result = apiError('NOT_FOUND', 'Resource not found', 404) as any;
+  it('returns data correctly with custom status', () => {
+    const data = { message: 'Created' }
+    const result = apiResponse(data, undefined, 201) as any
 
-    expect(result.init?.status).toBe(404);
-    expect(result.body?.error?.code).toBe('NOT_FOUND');
+    expect(result.init).toEqual({ status: 201 })
   })
 
-  it('includes the provided details object', () => {
-    const details = { field: 'email', reason: 'already exists' };
-    const result = apiError('CONFLICT', 'Conflict', 409, details) as any;
+  it('merges custom meta with generated request_id', () => {
+    const data = { message: 'Hello' }
+    const customMeta = { page: 1, total: 10 }
+    const result = apiResponse(data, customMeta) as any
 
-    expect(result.body?.error?.details).toEqual(details);
+    expect(result.body.meta).toEqual({
+      page: 1,
+      total: 10,
+      request_id: expect.any(String),
+    })
   })
 })
