@@ -91,7 +91,7 @@ async function handleBatchSEO(params: { document_ids?: string[], all?: boolean }
         title: doc.title as string,
         description: doc.description as string || '',
         content: doc.content as string,
-        slug: doc.slug as string,
+        slug: String(doc.slug) as string,
         category: doc.category as string,
       }, baseUrl)
 
@@ -110,6 +110,7 @@ async function handleBatchSEO(params: { document_ids?: string[], all?: boolean }
       results.push({ id: doc.id as string, slug: doc.slug as string, status: 'updated' })
     }))
   }
+
 
   return NextResponse.json({
     success: true,
@@ -348,6 +349,7 @@ async function handleEmojiSummaries(params: { document_ids?: string[], all?: boo
       WHERE t.id = u.id
     `
   }
+
 
   return NextResponse.json({
     success: true,
