@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const { workflow, input = {}, async = false } = body
 
     // Generate job ID
-    const jobId = `wf_${Date.now()}_${crypto.randomUUID().split('-')[0]}`
+    const jobId = `wf_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
 
     const job: WorkflowJob = {
       id: jobId,
@@ -366,18 +366,23 @@ async function executeCrossPost(input: Record<string, unknown>, baseUrl: string)
   if (!docs.length) throw new Error('Document not found')
   const doc = docs[0]
 
-  const promises = targets.map(async (target) => {
-    const integration = await sql`
-      SELECT * FROM integrations
-      WHERE tenant_id = ${DEFAULT_TENANT_ID} AND name = ${target} AND enabled = true
-    `
+  const integrations = await sql`
+    SELECT * FROM integrations
+    WHERE tenant_id = ${DEFAULT_TENANT_ID} AND name = ANY(${targets}::text[]) AND enabled = true
+  `
+  const integrationsMap = new Map(integrations.map(int => [int.name, int]))
+
+  const results = []
+  for (const target of targets) {
+    const integration = integrationsMap.get(target)
     
-    if (!integration.length) {
-      return { target, status: 'skipped', reason: 'Integration not found or disabled' }
+    if (!integration) {
+      results.push({ target, status: 'skipped', reason: 'Integration not found or disabled' })
+      continue
     }
 
     try {
-      const mcpUrl = `${integration[0].base_url}${integration[0].mcp_path}`
+      const mcpUrl = `${integration.base_url}${integration.mcp_path}`
       const response = await fetch(mcpUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -397,21 +402,19 @@ async function executeCrossPost(input: Record<string, unknown>, baseUrl: string)
         }),
       })
 
-      return {
+      results.push({
         target,
         status: response.ok ? 'success' : 'failed',
         response_status: response.status,
-      }
+      })
     } catch (error) {
-      return {
+      results.push({
         target,
         status: 'error',
         error: error instanceof Error ? error.message : 'Unknown error',
-      }
+      })
     }
-  })
-
-  const results = await Promise.all(promises)
+  }
 
   return { document_id, cross_posts: results }
 }
