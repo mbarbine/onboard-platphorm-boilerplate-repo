@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
         )
     }
   } catch (error) {
-    logger.error('[Automation API Error]', { error: error instanceof Error ? error : String(error) })
+    console.error('[Automation API Error]', { error: error instanceof Error ? error : String(error) })
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
