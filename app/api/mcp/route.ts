@@ -1,4 +1,3 @@
-
 import { NextResponse } from 'next/server'
 import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
@@ -651,10 +650,9 @@ export function createMcpServer(): McpServer {
       const searchIndexData: { id: string; content: string }[] = []
 
       for (const p of preparedDocs) {
-        const docId = insertedMap.get(p.slug)
+        const docId = insertedMap.get(p.slug) as string | undefined
         if (docId) {
-          searchIndexData.push({ id: String(docId), content: p.doc.title + ' ' + p.doc.content })
-          searchIndexData.push({ id: docId as string, content: p.doc.title + ' ' + p.doc.content })
+          searchIndexData.push({ id: docId, content: p.doc.title + ' ' + p.doc.content })
           results.push({ slug: p.slug, status: 'created' })
         } else {
           results.push({ slug: p.slug, status: 'skipped (exists)' })
@@ -801,28 +799,20 @@ export function createMcpServer(): McpServer {
           AND events @> ${JSON.stringify([event])}::jsonb
       `
       const payload = { event, timestamp: new Date().toISOString(), data: slug ? { slug } : {} }
-      const results: { webhook_id: string; status?: number; error?: string }[] = []
-
-      const CHUNK_SIZE = 10
-      for (let i = 0; i < webhooks.length; i += CHUNK_SIZE) {
-        const chunk = webhooks.slice(i, i + CHUNK_SIZE)
-        const chunkResults = await Promise.all(
-          chunk.map(async (wh) => {
-            try {
-              assertExternalUrl(wh.url as string)
-              const signature = crypto.createHmac('sha256', wh.secret as string).update(JSON.stringify(payload)).digest('hex')
-              const resp = await fetchWithTimeout(wh.url as string, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Webhook-Signature': signature },
-                body: JSON.stringify(payload),
-              }, 10_000)
-              return { webhook_id: wh.id as string, status: resp.status }
-            } catch (err) {
-              return { webhook_id: wh.id as string, error: (err as Error).message }
-            }
-          })
-        )
-        results.push(...chunkResults)
+      const results = []
+      for (const wh of webhooks) {
+        try {
+          assertExternalUrl(wh.url as string)
+          const signature = crypto.createHmac('sha256', wh.secret as string).update(JSON.stringify(payload)).digest('hex')
+          const resp = await fetchWithTimeout(wh.url as string, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Webhook-Signature': signature },
+            body: JSON.stringify(payload),
+          }, 10_000)
+          results.push({ webhook_id: wh.id, status: resp.status })
+        } catch (err) {
+          results.push({ webhook_id: wh.id, error: (err as Error).message })
+        }
       }
       return ok({ event, triggered: webhooks.length, results })
     },
@@ -891,12 +881,12 @@ export function createMcpServer(): McpServer {
       const url = `${baseUrl}/docs/${slug}`
       return ok({
         slug, url, links: [
-          { platform: 'twitter',    url: `https://twitter.com/intent/tweet?${new URLSearchParams({ text: doc.title as string, url }).toString()}`, icon: '𝕏'  },
-          { platform: 'linkedin',   url: `https://www.linkedin.com/sharing/share-offsite/?${new URLSearchParams({ url }).toString()}`, icon: '💼' },
-          { platform: 'facebook',   url: `https://www.facebook.com/sharer/sharer.php?${new URLSearchParams({ u: url }).toString()}`, icon: '📘' },
-          { platform: 'reddit',     url: `https://reddit.com/submit?${new URLSearchParams({ url, title: doc.title as string }).toString()}`, icon: '🔴' },
-          { platform: 'hackernews', url: `https://news.ycombinator.com/submitlink?${new URLSearchParams({ u: url, t: doc.title as string }).toString()}`, icon: '🟧' },
-          { platform: 'email',      url: `mailto:?${new URLSearchParams({ subject: doc.title as string, body: `${doc.description as string || ''}\n\n${url}` }).toString().replace(/\+/g, '%20')}`, icon: '📧' },
+          { platform: 'twitter',    url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(doc.title as string)}&url=${encodeURIComponent(url)}`,                              icon: '𝕏'  },
+          { platform: 'linkedin',   url: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,                                                               icon: '💼' },
+          { platform: 'facebook',   url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,                                                                      icon: '📘' },
+          { platform: 'reddit',     url: `https://reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(doc.title as string)}`,                                    icon: '🔴' },
+          { platform: 'hackernews', url: `https://news.ycombinator.com/submitlink?u=${encodeURIComponent(url)}&t=${encodeURIComponent(doc.title as string)}`,                            icon: '🟧' },
+          { platform: 'email',      url: `mailto:?subject=${encodeURIComponent(doc.title as string)}&body=${encodeURIComponent((doc.description as string || '') + '\n\n' + url)}`,      icon: '📧' },
         ],
       })
     },
@@ -1162,23 +1152,6 @@ export async function POST(req: Request): Promise<Response> {
 export async function GET(): Promise<NextResponse> {
   const baseUrl = await getBaseUrl()
   return NextResponse.json({
-    service: 'platphorm-mcp',
-    role: 'mcp_global',
-    service_version: '0.1.0',
-    supports: {
-      docs: true,
-      mcp: true,
-      sse: true,
-      callbacks: true,
-      auth: false,
-    },
-    mcp: {
-      endpoint: '/api/mcp',
-      protocol_versions: ['2025-11-25'],
-      tools: true,
-      resources: true,
-      prompts: true,
-    },
     name: `${SERVICE_NAME}-mcp`,
     version: '2.0.0',
     protocol_version: '2024-11-05',
@@ -1203,15 +1176,5 @@ export async function GET(): Promise<NextResponse> {
       'docs://tags', 'docs://stats', 'docs://sitemap', 'docs://llms',
     ],
     prompts: ['explain_doc', 'summarize_category', 'compare_docs', 'generate_faq', 'translate_doc', 'improve_seo'],
-    discoverability: {
-      docs: `${baseUrl}/api/docs`,
-      health: `${baseUrl}/api/health`,
-      version: `${baseUrl}/api/version`,
-      capabilities: `${baseUrl}/api/capabilities`,
-      llms_txt: `${baseUrl}/llms.txt`,
-      llms_full: `${baseUrl}/llms-full.txt`,
-      robots: `${baseUrl}/robots.txt`,
-      sitemap: `${baseUrl}/sitemap.xml`,
-    },
   })
 }
