@@ -14,6 +14,7 @@ import {
   ORG_NAME,
   DEFAULT_KEYWORDS,
 } from '@/lib/site-config'
+import { FEED_ENABLED } from '@/lib/feed-config'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -45,7 +46,9 @@ export const metadata: Metadata = {
   },
   alternates: {
     types: {
-      'application/rss+xml': '/rss.xml',
+      // The feed is off by default (see lib/feed-config.ts): advertise it
+      // only when the app publishes dated content.
+      ...(FEED_ENABLED ? { 'application/rss+xml': '/rss.xml' } : {}),
       'text/plain': '/llms.txt',
       'application/json': '/llms-index.json',
     },

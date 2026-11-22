@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { sql, DEFAULT_TENANT_ID, Document } from '@/lib/db'
 import { SITE_NAME, SITE_DESCRIPTION, BASE_URL as DEFAULT_BASE_URL } from '@/lib/site-config'
+import { FEED_ENABLED } from '@/lib/feed-config'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,6 +23,13 @@ async function getBaseUrl(): Promise<string> {
 }
 
 export async function GET() {
+  // Feeds are off by default: only apps that publish dated content enable
+  // them (see lib/feed-config.ts). A disabled feed is a 404, not an empty
+  // channel, so crawlers never discover a feed with nothing in it.
+  if (!FEED_ENABLED) {
+    return new NextResponse('Not Found', { status: 404 })
+  }
+
   const baseUrl = await getBaseUrl()
   
   let documents: Document[] = []
@@ -40,9 +48,13 @@ export async function GET() {
     console.error('Error fetching data for RSS:', error)
   }
 
-  const lastBuildDate = documents.length > 0 
-    ? new Date(documents[0].published_at || documents[0].updated_at).toUTCString()
-    : new Date().toUTCString()
+  // An enabled feed with no published documents is also a 404, not an
+  // empty channel with a fabricated build date.
+  if (documents.length === 0) {
+    return new NextResponse('Not Found', { status: 404 })
+  }
+
+  const lastBuildDate = new Date(documents[0].published_at || documents[0].updated_at).toUTCString()
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">

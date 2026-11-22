@@ -30,6 +30,7 @@ pnpm dev
 |----------|----------|-------------|
 | `DATABASE_URL` | Yes | Neon PostgreSQL connection string |
 | `NEXT_PUBLIC_BASE_URL` | No | Public URL (defaults to localhost) |
+| `NEXT_PUBLIC_FEED_ENABLED` | No | Set to `true` only when the app publishes dated content — enables `/rss.xml`, its sitemap entry, and feed autodiscovery (all off by default; an enabled feed with no published documents 404s instead of emitting an empty channel) |
 
 ## API
 
@@ -76,3 +77,4 @@ MIT — See [LICENSE](LICENSE)
 
 Created by [Michael Barbine](https://platphormnews.com)
 # onboard-platphorm-bp
+

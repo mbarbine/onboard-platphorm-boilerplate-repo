@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { sql, DEFAULT_TENANT_ID, Document, Category } from '@/lib/db'
 import { BASE_URL as DEFAULT_BASE_URL } from '@/lib/site-config'
+import { FEED_ENABLED } from '@/lib/feed-config'
 
 export const dynamic = 'force-dynamic'
 
@@ -70,7 +71,9 @@ export async function GET() {
     { url: '/llms.txt', priority: 0.4, changefreq: 'daily', lastmod: latestDocUpdate },
     { url: '/llms-full.txt', priority: 0.4, changefreq: 'daily', lastmod: latestDocUpdate },
     { url: '/robots.txt', priority: 0.4, changefreq: 'daily', lastmod: now },
-    { url: '/rss.xml', priority: 0.4, changefreq: 'daily', lastmod: latestDocUpdate },
+    // The feed is off by default (see lib/feed-config.ts): do not list a
+    // /rss.xml that 404s.
+    ...(FEED_ENABLED ? [{ url: '/rss.xml', priority: 0.4, changefreq: 'daily', lastmod: latestDocUpdate }] : []),
   ]
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>

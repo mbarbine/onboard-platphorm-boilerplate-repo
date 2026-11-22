@@ -5,6 +5,7 @@
  */
 
 import { BASE_URL } from '../lib/site-config'
+import { FEED_ENABLED } from '../lib/feed-config'
 import logger from '../lib/logger'
 
 interface TestResult {
@@ -229,6 +230,12 @@ async function testSitemapXml() {
 
 async function testRssFeed() {
   const res = await fetch(`${BASE_URL}/rss.xml`)
+  // Feeds are off by default (see lib/feed-config.ts): a feedless app must
+  // 404 here rather than serve an empty channel.
+  if (!FEED_ENABLED) {
+    if (res.status !== 404) throw new Error(`Expected 404 for disabled feed, got ${res.status}`)
+    return
+  }
   if (!res.ok) throw new Error(`Status: ${res.status}`)
   const text = await res.text()
   if (!text.includes('<?xml')) throw new Error('Invalid XML: ' + text.slice(0, 100))
@@ -257,36 +264,36 @@ async function main() {
 
   // Health & Discovery
   await runTest('Health endpoint returns healthy status', testHealthEndpoint)
-  
+
   // Documents API
   await runTest('List documents returns array', testListDocuments)
   await runTest('List documents with pagination', testListDocumentsWithPagination)
   await runTest('List documents with status filter', testListDocumentsWithStatus)
   await runTest('Get document by slug', testGetDocumentBySlug)
   await runTest('Get non-existent document returns 404', testGetNonExistentDocument)
-  
+
   // Categories API
   await runTest('List categories returns array', testListCategories)
-  
+
   // Search API
   await runTest('Search documents', testSearchDocuments)
-  
+
   // Submissions API
   await runTest('Create submission', testCreateSubmission)
-  
+
   // Ingest API
   await runTest('Ingest endpoint info', testIngestEndpointInfo)
-  
+
   // MCP API
   await runTest('MCP tools/list returns tools', testMCPToolsList)
   await runTest('MCP list_documents tool works', testMCPListDocuments)
   await runTest('MCP resources/list returns resources', testMCPResourcesList)
-  
+
   // LLM Discovery Files
   await runTest('llms.txt is accessible', testLLMSTxt)
   await runTest('llms-full.txt is accessible', testLLMSFullTxt)
   await runTest('llms-index.json is valid', testLLMSIndexJson)
-  
+
   // SEO/Discovery
   await runTest('sitemap.xml is valid XML', testSitemapXml)
   await runTest('rss.xml is valid feed', testRssFeed)
